@@ -72,6 +72,8 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	static private readonly Color CRefillFlash = Color.White;
 	static private readonly Color CFeather = 0xf2d450;
 
+	private const float DefaultCameraSensitivity = 5;
+
 	#endregion
 
 	#region SubClasses
@@ -270,7 +272,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			{
 				var invertX = Save.Instance.InvertCamera == Save.InvertCameraOptions.X || Save.Instance.InvertCamera == Save.InvertCameraOptions.Both;
 				var rot = new Vec2(cameraTargetForward.X, cameraTargetForward.Y).Angle();
-				rot -= Controls.Camera.Value.X * Time.Delta * 4 * (invertX ? -1 : 1);
+				rot -= Controls.Camera.Value.X * Time.Delta * 4 * (Save.Instance.CameraSensitivity / DefaultCameraSensitivity) * (invertX ? -1 : 1);
 
 				var angle = Calc.AngleToVector(rot);
 				cameraTargetForward = new(angle, 0);
@@ -280,7 +282,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			if (Controls.Camera.Value.Y != 0)
 			{
 				var invertY = Save.Instance.InvertCamera == Save.InvertCameraOptions.Y || Save.Instance.InvertCamera == Save.InvertCameraOptions.Both;
-				cameraTargetDistance += Controls.Camera.Value.Y * Time.Delta * (invertY ? -1 : 1);
+				cameraTargetDistance += Controls.Camera.Value.Y * Time.Delta * (Save.Instance.CameraSensitivity / DefaultCameraSensitivity) * (invertY ? -1 : 1);
 				cameraTargetDistance = Calc.Clamp(cameraTargetDistance, 0, 1);
 			}
 			else

@@ -81,6 +81,8 @@ public class Save
 	/// </summary>
 	public InvertCameraOptions InvertCamera { get; set; } = InvertCameraOptions.None;
 
+	public int CameraSensitivity { get; set; } = 5;
+
 	/// <summary>
 	/// Current Language ID
 	/// </summary>
@@ -144,6 +146,10 @@ public class Save
 	public void SetCameraInverted(InvertCameraOptions value)
 	{
 		InvertCamera = value;
+	}
+
+	public void SetCameraSensitivity(int value) {
+		CameraSensitivity = Calc.Clamp(value, 0, 10);
 	}
 
 	public void ToggleTimer()

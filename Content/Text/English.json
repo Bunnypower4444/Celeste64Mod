@@ -23,7 +23,8 @@
 		"OptionsTimer": "Timer",
 		"OptionsBGM": "BGM",
 		"OptionsSFX": "SFX",
-		"OptionsInvertCamera": "Inverted Camera"
+		"OptionsInvertCamera": "Inverted Camera",
+		"OptionsCameraSensitivity": "Camera Sensitivity"
 	},
 	"Dialog":
 	{
