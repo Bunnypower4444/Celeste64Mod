@@ -1,4 +1,7 @@
 
+using System.Security.Cryptography.X509Certificates;
+using FMOD;
+
 namespace Celeste64;
 
 public class Overworld : Scene
@@ -8,10 +11,20 @@ public class Overworld : Scene
 
 	public class Entry
 	{
+		public enum MenuState {
+			Start, ASides, BSides
+		}
 		public readonly LevelInfo Level;
 		public readonly Target Target;
 		public readonly Subtexture Image;
 		public readonly Menu Menu;
+		public readonly List<Menu>? ASides;
+		public int currentASideMenuIndex = 0;
+		public string? SelectedCheckpoint;
+		public readonly List<Menu>? BSides;
+		public int currentBSideMenuIndex = 0;
+		public string? SelectedSubmap;
+		public MenuState CurrentMenuState;
 		public readonly bool Complete = false;
 
 		public float HighlightEase;
@@ -28,9 +41,65 @@ public class Overworld : Scene
 
 			if (Save.Instance.TryGetRecord(Level.ID) is {} record)
 			{
-				Menu.Add(new Menu.Option(Loc.Str("Continue")));
+				var str = Loc.Str("Continue");
+				if (record.Checkpoint != string.Empty) {
+					str += $" ({record.Checkpoint})";
+				}
+				Menu.Add(new Menu.Option(str));
 				Menu.Add(new Menu.Option(Loc.Str("Restart")));
 				Complete = record.Strawberries.Count >= Level.Strawberries;
+
+				// Checkpoints
+				if (record.ReachedCheckpoints.Count > 0) 
+				{
+					ASides = [];
+					int checkpointIndex = 0, checkpointCount = 0;
+					for (int i = 0; i < record.ReachedCheckpoints.Count / 4.0f; i++)
+					{	
+						ASides.Add(new() {
+							UpSound = Sfx.main_menu_roll_up,
+							DownSound = Sfx.main_menu_roll_down,
+							Focused = false
+						});
+						if (i == 0) ASides[i].Focused = true;
+						var toArray = Assets.Maps[Level.Map]?.Checkpoints.ToArray();
+						for ( ; checkpointCount < (i + 1) * 4 && checkpointIndex < toArray?.Length; checkpointIndex++) {
+							var checkpoint = toArray is not null ? toArray[checkpointIndex] : string.Empty;
+							if (record.ReachedCheckpoints.Contains(checkpoint))
+							{
+								ASides[i].Add(new Menu.Option(checkpoint));
+								checkpointCount++;
+							}
+						}
+					}
+				}
+
+				// B-Sides (Submaps)
+				if (record.CompletedSubMaps.Count > 0)
+				{
+					BSides = [];
+					int submapIndex = 0, submapCount = 0;
+					HashSet<string> unlockedMaps = new(record.CompletedSubMaps.Union(record.StartedSubMaps));
+					for (int i = 0; i < unlockedMaps.Count / 4.0f; i++)
+					{	
+						BSides.Add(new() {
+							UpSound = Sfx.main_menu_roll_up,
+							DownSound = Sfx.main_menu_roll_down,
+							Focused = false
+						});
+						if (i == 0) BSides[i].Focused = true;
+						// If there is an order to the submaps, use that
+						var toArray = Level.SubmapOrder ?? Assets.Maps[Level.Map]?.Submaps.ToArray();
+						for ( ; submapCount < (i + 1) * 4 && submapIndex < toArray?.Length; submapIndex++) {
+							var submap = toArray is not null ? toArray[submapIndex] : string.Empty;
+							if (unlockedMaps.Contains(submap) && submap != string.Empty)
+							{
+								BSides[i].Add(new Menu.Option(submap));
+								submapCount++;
+							}
+						}
+					}
+				}
 			}
 			else
 			{
@@ -79,7 +148,8 @@ public class Overworld : Scene
 				batch.Text(font, Level.Label, bounds.TopLeft + new Vec2(32, 24) * Game.RelativeScale, Color.Black * 0.7f);
 
 				// stats
-				batch.PushMatrix(Matrix3x2.CreateScale(1.3f) * Matrix3x2.CreateTranslation(bounds.Center + new Vec2(0, -Padding)));
+				var yTranslation = CurrentMenuState != MenuState.Start ? bounds.Center - new Vec2(0, bounds.Center.Y / 6) : bounds.Center;
+				batch.PushMatrix(Matrix3x2.CreateScale(1.3f) * Matrix3x2.CreateTranslation(yTranslation + new Vec2(0, -Padding)));
 				{
 					int strawbs = 0, deaths = 0;
 					TimeSpan time = new();
@@ -97,8 +167,53 @@ public class Overworld : Scene
 				}
 				batch.PopMatrix();
 
-				// options
-				Menu.Render(batch, bounds.BottomCenter + new Vec2(0, -Menu.Size.Y - 8));
+				// Checkpoints / B-sides
+				switch (CurrentMenuState) {
+					case MenuState.Start:
+						// options
+						Menu.Render(batch, bounds.BottomCenter + new Vec2(0, -Menu.Size.Y - 8));
+						if (ASides is not null) 
+						{
+							UI.Prompt(batch, Controls.Left, Loc.Str("Checkpoints"), bounds.BottomLeft + new Vec2(4, -UI.PromptSize - 8), out _, 0);
+						}
+						else if (BSides is not null)
+						{
+							UI.Prompt(batch, Controls.Left, Loc.Str("B-Sides"), bounds.BottomLeft + new Vec2(4, -UI.PromptSize - 8), out _, 0);
+						}
+						break;
+					case MenuState.ASides:
+						if (ASides is null) break;
+						for (int i = 0; i < ASides.Count; i++) {
+							var menu = ASides[i];
+							menu.Render(batch, new Vec2((i + 0.5f) * bounds.Width / ASides.Count, bounds.Center.Y + bounds.Center.Y / 5 + menu.Size.Y / 2));
+						}
+
+						batch.PushMatrix(Matrix3x2.CreateScale(1.2f) * Matrix3x2.CreateTranslation(bounds.BottomCenter + new Vec2(0, -8)));
+						UI.Text(batch, Loc.Str("Checkpoints"), Vec2.Zero, new Vec2(0.5f, 1), Color.White);
+						batch.PopMatrix();
+
+						UI.Prompt(batch, Controls.Right, Loc.Str("Continue"), bounds.BottomRight + new Vec2(-8, -UI.PromptSize - 8), out _, 1);
+						if (BSides is not null)
+						{
+							UI.Prompt(batch, Controls.Left, Loc.Str("B-Sides"), bounds.BottomLeft + new Vec2(4, -UI.PromptSize - 8), out _, 0);
+						}
+						break;
+					case MenuState.BSides:
+						if (BSides is null) break;
+						for (int i = 0; i < BSides.Count; i++) {
+							var menu = BSides[i];
+							menu.Render(batch, new Vec2((i + 0.5f) * bounds.Width / BSides.Count, bounds.Center.Y + bounds.Center.Y / 5 + menu.Size.Y / 2));
+						}
+						
+						batch.PushMatrix(Matrix3x2.CreateScale(1.2f) * Matrix3x2.CreateTranslation(bounds.BottomCenter + new Vec2(0, -8)));
+						UI.Text(batch, Loc.Str("B-Sides"), Vec2.Zero, new Vec2(0.5f, 1), Color.White);
+						batch.PopMatrix();
+
+						if (ASides is not null)
+							UI.Prompt(batch, Controls.Right, Loc.Str("Checkpoints"), bounds.BottomRight + new Vec2(-8, -UI.PromptSize - 8), out _, 1);
+						else UI.Prompt(batch, Controls.Right, Loc.Str("Continue"), bounds.BottomRight + new Vec2(-8, -UI.PromptSize - 8), out _, 1);
+						break;
+				}
 			}
 
 			if (shine > 0)
@@ -123,6 +238,8 @@ public class Overworld : Scene
 		Selecting,
 		Selected,
 		Entering,
+		EnteringCheckpoint,
+		EnteringSubmap,
 		Restarting
 	}
 
@@ -133,6 +250,7 @@ public class Overworld : Scene
 	private float cameraCloseUpEase = 0;
 	private Vec2 wobble = new Vec2(0, -1);
 	private readonly List<Entry> entries = [];
+	private Entry currentEntry => entries[index];
 	private readonly Batcher batch = new();
 	private readonly Mesh mesh = new();
 	private readonly Material material = new(Assets.Shaders["Sprite"]);
@@ -169,7 +287,7 @@ public class Overworld : Scene
 				index = exitedFrom;
 				state = States.Selected;
 				selectedEase = 1.0f;
-				entries[index].HighlightEase = entries[index].SelectionEase = 1.0f;
+				currentEntry.HighlightEase = currentEntry.SelectionEase = 1.0f;
 			}
 		}
 
@@ -180,7 +298,7 @@ public class Overworld : Scene
 	{
 		slide += (index - slide) * (1 - MathF.Pow(.001f, Time.Delta));
 		wobble += (Controls.Camera.Value - wobble) * (1 - MathF.Pow(.1f, Time.Delta));
-		Calc.Approach(ref cameraCloseUpEase, state == States.Entering ? 1 : 0, Time.Delta);
+		Calc.Approach(ref cameraCloseUpEase, (state == States.Entering || state == States.EnteringCheckpoint || state == States.EnteringSubmap) ? 1 : 0, Time.Delta);
 		Calc.Approach(ref selectedEase, state != States.Selecting ? 1 : 0, 8 * Time.Delta);
 
 		for (int i = 0; i < entries.Count; i++)
@@ -190,7 +308,25 @@ public class Overworld : Scene
 			Calc.Approach(ref it.SelectionEase, index == i && (state == States.Selected || state == States.Restarting) ? 1.0f : 0.0f, Time.Delta * 4.0f);
 
 			if (it.SelectionEase >= 0.50f && state == States.Selected)
-				it.Menu.Update();
+			{
+				switch (it.CurrentMenuState) {
+					case Entry.MenuState.Start:
+						it.Menu.Update();
+						break;
+					case Entry.MenuState.ASides:
+						if (it.ASides is null) break;
+						foreach (var menu in it.ASides) {
+							menu.Update();
+						}
+						break;
+					case Entry.MenuState.BSides:
+						if (it.BSides is null) break;
+						foreach (var menu in it.BSides) {
+							menu.Update();
+						}
+						break;
+				}
+			}
 			it.Menu.Focused = state == States.Selected;
 		}
 
@@ -218,7 +354,7 @@ public class Overworld : Scene
 			if (Controls.Confirm.ConsumePress())
 			{
 				state = States.Selected;
-				entries[index].Menu.Index = 0;
+				currentEntry.Menu.Index = 0;
 				Audio.Play(Sfx.main_menu_postcard_flip);
 			}
 
@@ -235,25 +371,131 @@ public class Overworld : Scene
 		}
 		else if (state == States.Selected)
 		{
-			if (Controls.Confirm.ConsumePress() && entries[index].SelectionEase > 0.50f)
+			if (Controls.Confirm.ConsumePress() && currentEntry.SelectionEase > 0.50f)
 			{
-				if (entries[index].Menu.Index == 1)
-				{
-					Audio.Play(Sfx.main_menu_restart_confirm_popup);
-					restartConfirmMenu.Index = 0;
-					state = States.Restarting;
+				if (currentEntry.CurrentMenuState == Entry.MenuState.Start) {
+					if (currentEntry.Menu.Index == 1)
+					{
+						Audio.Play(Sfx.main_menu_restart_confirm_popup);
+						restartConfirmMenu.Index = 0;
+						state = States.Restarting;
+					}
+					else
+					{
+						Audio.Play(Sfx.main_menu_start_game);
+						Game.Instance.Music.Stop();
+						state = States.Entering;
+					}
 				}
-				else
+				else if (currentEntry.CurrentMenuState == Entry.MenuState.ASides) 
 				{
 					Audio.Play(Sfx.main_menu_start_game);
 					Game.Instance.Music.Stop();
-					state = States.Entering;
+					state = States.EnteringCheckpoint;
+					currentEntry.SelectedCheckpoint = currentEntry.ASides?[currentEntry.currentASideMenuIndex].CurrentItem.Label;
+				}
+				else if (currentEntry.CurrentMenuState == Entry.MenuState.BSides) 
+				{
+					Audio.Play(Sfx.main_menu_start_game);
+					Game.Instance.Music.Stop();
+					state = States.EnteringSubmap;
+					currentEntry.SelectedSubmap = currentEntry.BSides?[currentEntry.currentBSideMenuIndex].CurrentItem.Label;
 				}
 			}
 			else if (Controls.Cancel.ConsumePress())
 			{
 				Audio.Play(Sfx.main_menu_postcard_flip_back);
 				state = States.Selecting;
+			}
+			else if (Controls.Left.ConsumePress()) {
+				if (currentEntry.CurrentMenuState == Entry.MenuState.Start)
+				{	
+					if (currentEntry.ASides is not null) 
+					{
+						Audio.Play(Sfx.ui_move);
+						currentEntry.CurrentMenuState = Entry.MenuState.ASides;
+					}
+					else if (currentEntry.BSides is not null)
+					{
+						Audio.Play(Sfx.ui_move);
+						currentEntry.CurrentMenuState = Entry.MenuState.BSides;
+					}
+				}
+				else if (currentEntry.CurrentMenuState == Entry.MenuState.ASides)
+				{
+					if (currentEntry.BSides is not null)
+					{
+						Audio.Play(Sfx.ui_move);
+						currentEntry.CurrentMenuState = Entry.MenuState.BSides;
+					}
+				}
+			}
+			else if (Controls.Right.ConsumePress()) {
+				if (currentEntry.CurrentMenuState == Entry.MenuState.ASides) 
+				{
+					Audio.Play(Sfx.ui_move);
+					currentEntry.CurrentMenuState = Entry.MenuState.Start;
+				}
+				else if (currentEntry.CurrentMenuState == Entry.MenuState.BSides)
+				{
+					Audio.Play(Sfx.ui_move);
+					if (currentEntry.ASides is not null) currentEntry.CurrentMenuState = Entry.MenuState.ASides;
+					else currentEntry.CurrentMenuState = Entry.MenuState.Start;
+				}
+			}
+			else if (Controls.Menu.Horizontal.Positive.Pressed) {
+				if (currentEntry.CurrentMenuState == Entry.MenuState.ASides && currentEntry.ASides is not null ||
+					 currentEntry.CurrentMenuState == Entry.MenuState.BSides && currentEntry.BSides is not null) 
+				{
+					var menuList = currentEntry.CurrentMenuState == Entry.MenuState.ASides ? currentEntry.ASides : currentEntry.BSides;
+					if (menuList is null) goto End;
+					int menuIndex () {
+						return currentEntry.CurrentMenuState == Entry.MenuState.ASides ? currentEntry.currentASideMenuIndex : currentEntry.currentBSideMenuIndex;
+					}
+					void setMenuIndex (int value) {
+						if (currentEntry.CurrentMenuState == Entry.MenuState.ASides)
+							currentEntry.currentASideMenuIndex = value;
+						else currentEntry.currentBSideMenuIndex = value;
+					}
+					if (menuIndex() >= menuList.Count - 1) goto End;
+					
+					menuList[menuIndex()].Focused = false;
+					var ind = menuList[menuIndex()].Index;
+					setMenuIndex(menuIndex() + 1);
+					Audio.Play(Sfx.main_menu_roll_up);
+
+					menuList[menuIndex()].Focused = true;
+					menuList[menuIndex()].Index = Math.Min(ind, menuList[menuIndex()].Count - 1);
+
+					End: {}
+				}
+			}
+			else if (Controls.Menu.Horizontal.Negative.Pressed) {
+				if (currentEntry.CurrentMenuState == Entry.MenuState.ASides && currentEntry.ASides is not null ||
+					 currentEntry.CurrentMenuState == Entry.MenuState.BSides && currentEntry.BSides is not null) 
+				{
+					var menuList = currentEntry.CurrentMenuState == Entry.MenuState.ASides ? currentEntry.ASides : currentEntry.BSides;
+					if (menuList is null) goto End;
+					int menuIndex () {
+						return currentEntry.CurrentMenuState == Entry.MenuState.ASides ? currentEntry.currentASideMenuIndex : currentEntry.currentBSideMenuIndex;
+					}
+					void setMenuIndex (int value) {
+						if (currentEntry.CurrentMenuState == Entry.MenuState.ASides)
+							currentEntry.currentASideMenuIndex = value;
+						else currentEntry.currentBSideMenuIndex = value;
+					}
+					if (menuIndex() < 1) goto End;
+					
+					menuList[menuIndex()].Focused = false;
+					var ind = menuList[menuIndex()].Index;
+					setMenuIndex(menuIndex() - 1);
+					Audio.Play(Sfx.main_menu_roll_down);
+					
+					menuList[menuIndex()].Focused = true;
+					menuList[menuIndex()].Index = ind;
+
+					End: {}
+				}
 			}
 		}
 		else if (state == States.Restarting)
@@ -266,7 +508,7 @@ public class Overworld : Scene
 				{
 					Audio.Play(Sfx.main_menu_start_game);
 					Game.Instance.Music.Stop();
-					Save.Instance.EraseRecord(entries[index].Level.ID);
+					Save.Instance.EraseRecord(currentEntry.Level.ID);
 					state = States.Entering;
 				}
 				else
@@ -285,7 +527,47 @@ public class Overworld : Scene
 		{
 			if (cameraCloseUpEase >= 1.0f)
 			{
-				entries[index].Level.Enter(new SlideWipe(), 1.5f);
+				currentEntry.Level.Enter(new SlideWipe(), 1.5f);
+			}
+		} 
+		else if (state == States.EnteringCheckpoint) 
+		{
+			if (cameraCloseUpEase >= 1.0f) {
+				currentEntry.Level.Enter(currentEntry.SelectedCheckpoint ?? "Start", new SlideWipe(), 1.5f);
+			}
+		}
+		else if (state == States.EnteringSubmap)
+		{
+			if (cameraCloseUpEase >= 1.0f) {
+				if (currentEntry.SelectedSubmap is null || !Assets.Maps.ContainsKey(currentEntry.SelectedSubmap)) goto End;
+				Save.Instance.LevelID = currentEntry.Level.ID;
+
+				World? world = null;
+
+				Game.Instance.Goto(new Transition()
+				{
+					Mode = Transition.Modes.Replace,
+					Scene = () => {
+						world = new World(new(currentEntry.Level.Map, Save.CurrentRecord.Checkpoint, false, World.EntryReasons.Entered));
+						return world;
+					},
+					ToBlack = new SlideWipe(),
+					FromBlack = new SpotlightWipe(),
+					StopMusic = true,
+					HoldOnBlackFor = 1.5f,
+					Callback = () => {
+						if (world == null) return;
+						Cassette? cassette = world.All<Cassette>().Find(
+							actor => {
+								if (actor is Cassette cassette && cassette.Map == currentEntry.SelectedSubmap) return true;
+								return false;
+							}
+						) as Cassette;
+						if (cassette != null) world.Get<Player>()?.EnterCassette(cassette);
+					}
+				});
+				
+				End: {}
 			}
 		}
 	}
@@ -325,7 +607,7 @@ public class Overworld : Scene
 				Matrix.CreateScale(new Vec3(it.SelectionEase >= 0.50f ? -1 : 1, 1, 1)) *
 				Matrix.CreateRotationX(wobble.Y * it.HighlightEase) *
 				Matrix.CreateRotationZ(wobble.X * it.HighlightEase) *
-				Matrix.CreateRotationZ((state == States.Entering ? -1 : 1) * rotation * MathF.PI) *
+				Matrix.CreateRotationZ(((state == States.Entering || state == States.EnteringCheckpoint || state == States.EnteringSubmap) ? -1 : 1) * rotation * MathF.PI) *
 				Matrix.CreateTranslation(position);
 
             if (material.Shader?.Has("u_matrix") ?? false)
@@ -375,7 +657,7 @@ public class Overworld : Scene
 				Color.White * 0.30f);
 
 			// button prompts
-			if (state != States.Entering)
+			if (state != States.Entering && state != States.EnteringCheckpoint && state != States.EnteringSubmap)
 			{
 				var cancelPrompt = Loc.Str(state == States.Selecting ? "back" : "cancel");
 				var at = bounds.BottomRight + new Vec2(-16, -4) * Game.RelativeScale + new Vec2(0, -UI.PromptSize);

@@ -140,6 +140,9 @@ public class Menu
 	public string UpSound = Sfx.ui_move;
 	public string DownSound = Sfx.ui_move;
 
+	public Item CurrentItem => items[Index];
+	public int Count => items.Count;
+
 	public bool IsInMainMenu => submenus.Count <= 0;
 	private Menu CurrentMenu => submenus.Count > 0 ? submenus.Peek() : this;
 	

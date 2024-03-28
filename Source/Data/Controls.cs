@@ -12,6 +12,8 @@ public static class Controls
 	public static readonly VirtualButton Confirm = new("Confirm");
 	public static readonly VirtualButton Cancel = new("Cancel");
 	public static readonly VirtualButton Pause = new("Pause");
+	public static readonly VirtualButton Left = new("Left");
+	public static readonly VirtualButton Right = new("Right");
 
 	public static void Load(ControlsConfig? config = null)
 	{
@@ -51,6 +53,10 @@ public static class Controls
 			it.BindTo(Cancel);
 		foreach (var it in FindAction(config, "Pause"))
 			it.BindTo(Pause);
+		foreach (var it in FindAction(config, "Left"))
+			it.BindTo(Left);
+		foreach (var it in FindAction(config, "Right"))
+			it.BindTo(Right);
 
 	}
 
@@ -110,10 +116,11 @@ public static class Controls
 	{
 		// TODO: instead, query the button's actual bindings and look up a
 		// texture based on that! no time tho
-		if (button == Confirm)
+		/*if (button == Confirm)
 			return GetPromptLocation("confirm");
 		else
-			return GetPromptLocation("cancel");
+			return GetPromptLocation("cancel");*/
+		return GetPromptLocation(button.Name);
 	}
 
 	public static Subtexture GetPrompt(VirtualButton button)

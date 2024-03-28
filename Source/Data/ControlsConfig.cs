@@ -127,6 +127,14 @@ public class ControlsConfig
 				new(Keys.Enter), new(Keys.Escape),
 				new(Buttons.Start), new(Buttons.Select), new(Buttons.Back)
 			],
+			["Left"] = [
+				new(Keys.Z),
+				new(Buttons.LeftShoulder)
+			],
+			["Right"] = [
+				new(Keys.V),
+				new(Buttons.RightShoulder)
+			]
 		},
 
 		Sticks = new() {

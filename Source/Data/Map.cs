@@ -102,12 +102,15 @@ public class Map
 	private readonly List<SledgeEntity> floatingDecorations = [];
 	private readonly List<SledgeEntity> entities = [];
 	private readonly HashSet<string> checkpoints = [];
+	private readonly HashSet<string> submaps = [];
 	private readonly BoundingBox localStaticSolidsBounds;
 	private readonly Matrix baseTransform = Matrix.CreateScale(0.2f);
 
 	// kind of a hack, but assigned during load, unset after
 	public World? LoadWorld;
 	public int LoadStrawberryCounter = 0;
+	public HashSet<string> Checkpoints { get => checkpoints; }
+	public HashSet<string> Submaps { get => submaps; }
 
 	public Map(string name, string filename)
 	{
@@ -146,6 +149,11 @@ public class Map
 					else if (entity.ClassName == "PlayerSpawn")
 					{
 						checkpoints.Add(entity.GetStringProperty("name", StartCheckpoint));
+						entities.Add(entity);
+					}
+					else if (entity.ClassName == "Cassette")
+					{
+						submaps.Add(entity.GetStringProperty("map", string.Empty));
 						entities.Add(entity);
 					}
 					else

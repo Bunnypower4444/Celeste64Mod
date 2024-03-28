@@ -113,7 +113,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private static Vec3 storedCameraForward;
 	private static float storedCameraDistance;
 
-	private enum States { Normal, Dashing, Skidding, Climbing, StrawbGet, FeatherStart, Feather, Respawn, Dead, StrawbReveal, Cutscene, Bubble, Cassette };
+	private enum States { Normal, Dashing, Skidding, Climbing, StrawbGet, FeatherStart, Feather, Respawn, Dead, StrawbReveal, Cutscene, Bubble, Cassette, DebugFlying };
 	private enum Events { Land };
 
 	public bool Dead = false;
@@ -224,6 +224,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		stateMachine.InitState(States.Dead, StDeadUpdate, StDeadEnter);
 		stateMachine.InitState(States.Bubble, null, null, StBubbleExit, StBubbleRoutine);
 		stateMachine.InitState(States.Cassette, null, null, StCassetteExit, StCassetteRoutine);
+		stateMachine.InitState(States.DebugFlying, StDebugFlyingUpdate, StDebugFlyingEnter, StDebugFlyingExit);
 
 		spikeBlockCheck = (spike) =>
 		{
@@ -387,6 +388,21 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 						pickup.Pickup(this);
 				}
 			}
+		}
+
+		// Toggle Debug Flying
+		if (Input.Keyboard.Pressed(Keys.F3) &&
+		 stateMachine.State != States.FeatherStart &&
+		 stateMachine.State != States.Cassette &&
+		 stateMachine.State != States.Bubble &&
+		 stateMachine.State != States.Cutscene &&
+		 stateMachine.State != States.Dead &&
+		 stateMachine.State != States.Respawn &&
+		 stateMachine.State != States.StrawbGet &&
+		 stateMachine.State != States.StrawbReveal
+		 )
+		{
+			stateMachine.State = stateMachine.State == States.DebugFlying ? States.Normal : States.DebugFlying;
 		}
 	}
 
@@ -1692,6 +1708,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		if (World.Entry.Submap)
 		{
 			Save.CurrentRecord.CompletedSubMaps.Add(World.Entry.Map);
+			Save.CurrentRecord.StartedSubMaps.Remove(World.Entry.Map);
 			Game.Instance.Goto(new Transition()
 			{
 				Mode = Transition.Modes.Pop,
@@ -2119,6 +2136,8 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 					ToBlack = new SpotlightWipe(),
 					StopMusic = true
 				});
+				if (!Save.CurrentRecord.CompletedSubMaps.Contains(cassette.Map))
+					Save.CurrentRecord.StartedSubMaps.Add(cassette.Map);
 			}
 		}
 
@@ -2142,6 +2161,32 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		drawModel = drawHair = true;
 		cameraOverride = null;
 		PointShadowAlpha = 1;
+	}
+
+	#endregion
+
+	#region Debug Flying State
+
+	private const float debugFlyingSpeed = 64;
+
+	private void StDebugFlyingEnter() {
+		Model.Rate = 1;
+		velocity = Vec3.Zero;
+	}
+
+	private void StDebugFlyingExit() {
+		Model.Rate = 1;
+	}
+
+	private void StDebugFlyingUpdate() {
+		// Fly around; use joystick to move, jump to go up, dash to go down
+		velocity = Vec3.Zero.WithXY(RelativeMoveInput * debugFlyingSpeed);
+		if (Controls.Jump.Down) {
+			velocity.Z += debugFlyingSpeed;
+			if (onGround) CancelGroundSnap();
+		}
+		if (Controls.Dash.Down) velocity.Z -= debugFlyingSpeed;
+		if (RelativeMoveInput != Vec2.Zero) targetFacing = RelativeMoveInput.Normalized();
 	}
 
 	#endregion

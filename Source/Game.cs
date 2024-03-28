@@ -22,6 +22,7 @@ public struct Transition
 	public bool StopMusic;
 	public bool PerformAssetReload;
 	public float HoldOnBlackFor;
+	public Action? Callback;
 }
 
 public class Game : Module
@@ -198,8 +199,11 @@ public class Game : Module
 				nextScene.Update();
 			}
 
-			// switch music
-			{
+            // callback
+            transition.Callback?.Invoke();
+
+            // switch music
+            {
 				var last = Music.IsPlaying && lastScene != null ? lastScene.Music : string.Empty;
 				var next = nextScene?.Music ?? string.Empty;
 				if (next != last)

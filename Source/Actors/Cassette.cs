@@ -61,7 +61,8 @@ public class Cassette : Actor, IHaveModels, IPickup, IHaveSprites, ICastPointSha
 
 	public void Pickup(Player player)
 	{
-		if (!IsCollected && tCooldown <= 0.0f && !Game.Instance.IsMidTransition)
+		// Edited so that you can replay cassette levels
+		if (/*!IsCollected && */tCooldown <= 0.0f && !Game.Instance.IsMidTransition)
 		{
 			player.Stop();
 			player.EnterCassette(this);
@@ -72,6 +73,7 @@ public class Cassette : Actor, IHaveModels, IPickup, IHaveSprites, ICastPointSha
 	public void PlayerExit()
 	{
 		tWiggle = 1.0f;
+		tCooldown = 5.0f;
 	}
 
 	public void CollectSprites(List<Sprite> populate)

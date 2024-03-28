@@ -60,6 +60,7 @@ public class World : Scene
 	private TimeSpan lastDebugRndTime;
 	private int debugUpdateCount;
 	public static bool DebugDraw { get; private set; } = false;
+	public static bool ShowCoordinates { get; private set; } = false;
 
 	public World(EntryInfo entry)
 	{
@@ -316,6 +317,10 @@ public class World : Scene
 		// toggle debug draw
 		if (Input.Keyboard.Pressed(Keys.F1))
 			DebugDraw = !DebugDraw;
+		
+		// toggle show coordinates
+		if (Input.Keyboard.Pressed(Keys.F2))
+			ShowCoordinates = !ShowCoordinates;
 		
 		// normal game loop
 		if (!Paused)
@@ -801,6 +806,14 @@ public class World : Scene
 						Matrix3x2.CreateTranslation(at + new Vec2(-60 * (1 - Ease.Cube.Out(strawbCounterEase)), UI.IconSize / 2)));
 					UI.Strawberries(batch, Save.CurrentRecord.Strawberries.Count, Vec2.Zero);
 					batch.PopMatrix();
+					at.Y += UI.IconSize + 8;
+				}
+
+				// show position if debug enabled
+				if (ShowCoordinates && Get<Player>() is Player player) {
+					batch.Text(font, $"X: {player.Position.X}", at, new Vec2(0, 0.5f), 0xffa0a0);
+					batch.Text(font, $"Y: {player.Position.Y}", at + new Vec2(0, font.LineHeight), new Vec2(0, 0.5f), 0xa0a0ff);
+					batch.Text(font, $"Z: {player.Position.Z}", at + new Vec2(0, font.LineHeight * 2), new Vec2(0, 0.5f), 0xa0ffa0);
 				}
 
 				// show version number when paused / in ending area
