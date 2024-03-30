@@ -321,6 +321,11 @@ public class Game : Module
 				batcher.Clear();
 			}
 		}
+		// If the color of the screenwipe is not black  (like with the SnowWipe)
+		else if (transition.ToBlack?.CustomColor != null)
+		{
+			Graphics.Clear((Color)transition.ToBlack.CustomColor);
+		}
 	}
 
 	private FMOD.RESULT MusicTimelineCallback(FMOD.Studio.EVENT_CALLBACK_TYPE type, IntPtr _event, IntPtr parameters)

@@ -10,6 +10,9 @@ public abstract class ScreenWipe
 	private float percent = 0;
 	private float duration;
 
+	// In case the screenwipe color is not black  (like with the SnowWipe)
+	public Color? CustomColor;
+
 	public ScreenWipe(float duration)
 	{
 		IsFinished = false;
