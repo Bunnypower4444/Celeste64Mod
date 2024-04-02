@@ -10,6 +10,7 @@ public class AreaTrigger(string id) : Actor
     private readonly List<Action<AreaTrigger>> exitActions = [];
     public readonly string ID = id;
     public bool PlayerIsInTrigger => World.Get<Player>() is {} player && WorldBounds.Contains(player.Position);
+    public bool PlayerWasInTrigger { get; private set; } = false;
 
     public static AreaTrigger? GetAreaTrigger(World world, string id)
     {
@@ -60,5 +61,15 @@ public class AreaTrigger(string id) : Actor
         {
             action(this);
         }
+    }
+
+    public override void Update()
+    {
+        base.Update();
+        var inTrigger = PlayerIsInTrigger;
+        if (inTrigger && !PlayerWasInTrigger) RunEnterActions();
+        else if (!inTrigger && PlayerWasInTrigger) RunExitActions();
+
+        PlayerWasInTrigger = inTrigger;
     }
 }
