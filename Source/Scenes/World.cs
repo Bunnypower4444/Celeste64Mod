@@ -285,11 +285,6 @@ public class World : Scene
 		if (!IsInEndingArea)
 		{
 			Save.CurrentRecord.Time += TimeSpan.FromSeconds(Time.Delta);
-			Game.Instance.Music.Set("at_baddy", 0);
-		}
-		else
-		{
-			Game.Instance.Music.Set("at_baddy", 1);
 		}
 
 		// handle strawb counter

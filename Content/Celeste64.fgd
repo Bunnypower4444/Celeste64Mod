@@ -142,6 +142,11 @@
 	
 ]
 
+@SolidClass = AreaTrigger : "An area that triggers events when the player enters and exits the area"
+[
+    id(string) : "ID of the area trigger"
+]
+
 @SolidClass = FixedCamera : "Lock Camera Position to a Target"
 [
    target(string) : "Target Node"
