@@ -136,6 +136,9 @@ public class World : Scene
 		// load content
 		map.Load(this);
 
+		ResolveChanges();
+		WorldSetup.Setup(this);
+
 		Log.Info($"Loaded Map '{Entry.Map}' in {stopwatch.ElapsedMilliseconds}ms");
 	}
 
