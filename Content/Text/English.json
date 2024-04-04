@@ -774,6 +774,53 @@
 				"Voice": "credits/credits_13",
 				"Text": "And lastly, thank you to Celeste players everywhere.\nYour love and passion for our little game\ncontinues to inspire us."
 			}
+		],
+		"PacerTestSign": [
+			{
+				"Face": "signpost",
+				"Voice": "sign/general_10",
+				"Text": "The FitnessGram™️ Pacer Test is a multistage\naerobic capacity test that progressively gets more\n difficult as it continues."
+			},
+			{
+				"Face": "signpost",
+				"Voice": "sign/general_10",
+				"Text": "The 20-meter pacer test will begin in 30 seconds."
+			},
+			{
+				"Face": "signpost",
+				"Voice": "sign/general_10",
+				"Text": "Line up at the start."
+			},
+			{
+				"Face": "signpost",
+				"Voice": "sign/general_10",
+				"Text": "The running speed starts slowly, but gets faster\neach minute after you hear this signal. [beep]"
+			},
+			{
+				"Face": "signpost",
+				"Voice": "sign/general_10",
+				"Text": "A single lap should be completed each time\nyou hear this sound. [ding]"
+			},
+			{
+				"Face": "signpost",
+				"Voice": "sign/general_10",
+				"Text": "Remember to run in a straight line,\nand run as long as possible."
+			},
+			{
+				"Face": "signpost",
+				"Voice": "sign/general_10",
+				"Text": "The second time you fail to complete a lap\nbefore the sound, your test is over."
+			},
+			{
+				"Face": "signpost",
+				"Voice": "sign/general_10",
+				"Text": "The test will begin on the word start."
+			},
+			{
+				"Face": "signpost",
+				"Voice": "sign/general_10",
+				"Text": "On your mark, get ready, start."
+			}
 		]
 	}
 }

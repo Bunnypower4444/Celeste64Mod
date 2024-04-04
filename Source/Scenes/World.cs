@@ -61,6 +61,21 @@ public class World : Scene
 	private int debugUpdateCount;
 	public static bool DebugDraw { get; private set; } = false;
 	public static bool ShowCoordinates { get; private set; } = false;
+	public bool StartedPacerTest = false;
+	public enum PacerTestSides { Side1, Side2 } // 1 is the side with the sign, 2 is other side
+	public PacerTestSides PacerTestSide = PacerTestSides.Side2;
+	public AreaTrigger? PacerTestSide1;
+	public AreaTrigger? PacerTestSide2;
+	private int pacerTestScore = 0;
+	private int pacerTestMistakes = 0;
+	private const int MAX_PACER_TEST_MISTAKES = 2;
+	private int pacerTestLevel = 1;
+	private float pacerTestTimeLeft = 9;
+	
+	public readonly int[] PacerTestLevelStart = 
+		[0, 7, 15, 23, 32, 41, 51, 61, 72, 83, 94, 106, 118, 131, 144, 157, 171, 185, 200, 215, 231, 247];
+	public readonly float[] PacerTestTimes =
+		[9, 8, 7.58f, 7.2f, 6.86f, 6.55f, 6.26f, 6, 55.76f, 5.54f, 5.33f, 5.14f, 4.97f, 4.8f, 4.65f, 4.5f, 4.36f, 4.24f, 4.11f, 4, 3.89f];
 
 	public World(EntryInfo entry)
 	{
@@ -356,6 +371,47 @@ public class World : Scene
 			}
 
 			GeneralTimer += Time.Delta;
+
+			// Pacer test
+			if (StartedPacerTest)
+			{
+				pacerTestTimeLeft -= Time.Delta;
+
+				// Next lap
+				if (pacerTestTimeLeft <= 0)
+				{
+					if ((PacerTestSide == PacerTestSides.Side1 && PacerTestSide1 != null && PacerTestSide1.PlayerIsInTrigger) ||
+						(PacerTestSide == PacerTestSides.Side2 && PacerTestSide2 != null && PacerTestSide2.PlayerIsInTrigger))
+						goto NextLap;
+					// Fail
+					else
+					{
+						pacerTestMistakes++;
+						if (pacerTestMistakes >= MAX_PACER_TEST_MISTAKES)
+						{
+							StartedPacerTest = false;
+						}
+						else goto NextLap;
+					}
+
+					NextLap:
+					{
+						PacerTestSide = PacerTestSide == PacerTestSides.Side1 ? PacerTestSides.Side2 : PacerTestSides.Side1;
+						pacerTestScore++;
+
+						// Next level
+						if (pacerTestLevel - 1 < PacerTestLevelStart.Length && pacerTestScore >= PacerTestLevelStart[pacerTestLevel])
+						{
+							pacerTestLevel++;
+							Audio.Play(Sfx.sfx_touch_switch_last);
+						}
+						else
+							Audio.Play(Sfx.sfx_feather_renew, Camera.LookAt);
+						
+						pacerTestTimeLeft = PacerTestTimes[pacerTestLevel - 1];
+					}
+				}
+			}
 
 			// add / remove actors
 			ResolveChanges();
@@ -808,10 +864,28 @@ public class World : Scene
 				}
 
 				// show position if debug enabled
-				if (ShowCoordinates && Get<Player>() is Player player) {
+				if (ShowCoordinates && Get<Player>() is Player player)
+				{
 					batch.Text(font, $"X: {player.Position.X}", at, new Vec2(0, 0.5f), 0xffa0a0);
 					batch.Text(font, $"Y: {player.Position.Y}", at + new Vec2(0, font.LineHeight), new Vec2(0, 0.5f), 0xa0a0ff);
 					batch.Text(font, $"Z: {player.Position.Z}", at + new Vec2(0, font.LineHeight * 2), new Vec2(0, 0.5f), 0xa0ffa0);
+				}
+
+				// pacer test
+				if (StartedPacerTest)
+				{
+					batch.PushMatrix(Matrix3x2.CreateScale(2) * Matrix3x2.CreateTranslation(bounds.BottomCenter - new Vec2(0, font.LineHeight * 3 + 20)));
+					UI.Text(batch, pacerTestScore.ToString(), Vec2.Zero, new Vec2(0.5f, 1f), Color.White);
+					batch.PopMatrix();
+					UI.Text(batch, pacerTestTimeLeft.ToString("0.00"), bounds.BottomCenter - new Vec2(0, font.LineHeight * 2 + 10), new Vec2(0.5f, 1), Color.White);
+					UI.Text(batch, $"Level {pacerTestLevel}", bounds.BottomCenter - new Vec2(0, font.LineHeight + 10), new Vec2(0.5f, 1), Color.LightGray);
+
+					string str = "";
+					for (int i = 0; i < pacerTestMistakes; i++)
+					{
+						str += "X";
+					}
+					UI.Text(batch, str, bounds.BottomCenter - new Vec2(0, 10), new Vec2(0.5f, 1), Color.Red);
 				}
 
 				// show version number when paused / in ending area
@@ -885,5 +959,15 @@ public class World : Scene
 			state.ModelMatrix = it.Model.Transform * it.Actor.Matrix;
 			it.Model.Render(ref state);
 		}
+	}
+
+	public void StartPacerTest()
+	{
+		PacerTestSide = PacerTestSides.Side2;
+		StartedPacerTest = true;
+		pacerTestMistakes = 0;
+		pacerTestScore = 0;
+		pacerTestLevel = 1;
+		pacerTestTimeLeft = PacerTestTimes[0];
 	}
 }

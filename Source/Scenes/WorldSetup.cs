@@ -64,6 +64,12 @@ public static class WorldSetup
             var granny = world.Get<Granny>();
             granny?.SetDialogue(GetDialogueLines(GRANNY_DIALOG_KEYS_1));
         }
+
+        // Pacer test
+        {
+            world.PacerTestSide1 = AreaTrigger.GetAreaTrigger(world, "PacerSide1");
+            world.PacerTestSide2 = AreaTrigger.GetAreaTrigger(world, "PacerSide2");
+        }
     }
 
     #endregion
