@@ -147,6 +147,11 @@
     id(string) : "ID of the area trigger"
 ]
 
+@PointClass = PacerStrawbUnlocker : "Sets Pacer Test requirements for a strawberry"
+[
+    score(int) : "Required score"
+]
+
 @SolidClass = FixedCamera : "Lock Camera Position to a Target"
 [
    target(string) : "Target Node"

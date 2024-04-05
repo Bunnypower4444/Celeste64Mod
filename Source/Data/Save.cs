@@ -33,6 +33,7 @@ public class Save
 		public Dictionary<string, int> Flags { get; set; } = []; 
 		public int Deaths { get; set; } = 0;
 		public TimeSpan Time { get; set; } = new();
+		public int PacerHighScore { get; set; } = 0;
 
 		public int GetFlag(string name, int defaultValue = 0) 
 			=> Flags.TryGetValue(name, out int value) ? value : defaultValue;

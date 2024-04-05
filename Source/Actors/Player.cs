@@ -853,11 +853,24 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 	public void Kill()
 	{
+		if (World.StartedPacerTest && World.PacerTestMistakes + 1 < World.MAX_PACER_TEST_MISTAKES)
+		{
+			World.PacerTestMistakes++;
+			if (World.PacerTestSide == World.PacerTestSides.Side1)
+			{
+				if (World.PacerTestSide1 != null) BubbleTo(World.PacerTestSide1.Position);
+			}
+			else if (World.PacerTestSide2 != null) BubbleTo(World.PacerTestSide2.Position);
+			velocity = Vec3.Zero;
+			return;
+		}
 		stateMachine.State = States.Dead;
 		storedCameraForward = cameraTargetForward;
 		storedCameraDistance = cameraTargetDistance;
 		Save.CurrentRecord.Deaths++;
 		Dead = true;
+		if (World.StartedPacerTest && World.PacerTestScore > Save.CurrentRecord.PacerHighScore)
+			Save.CurrentRecord.PacerHighScore = World.PacerTestScore;
 	}
 
 	private bool ClimbCheckAt(Vec3 offset, out WallHit hit)

@@ -91,6 +91,7 @@ public class Map
 		["DoubleDashPuzzleBlock"] = new((map, entity) => new DoubleDashPuzzleBlock()) { IsSolidGeometry = true },
 		["EndingArea"] = new((map, entity) => new EndingArea()) { UseSolidsAsBounds = true },
 		["AreaTrigger"] = new((map, entity) => new AreaTrigger(entity.GetStringProperty("id", string.Empty))) { UseSolidsAsBounds = true },
+		["PacerStrawbUnlocker"] = new((map, entity) => new PacerStrawbUnlocker(entity.GetIntProperty("score", 0))),
 		["Fog"] = new((map, entity) => new FogRing(entity)),
 		["FixedCamera"] = new((map, entity) => new FixedCamera(map.FindTargetNodeFromParam(entity, "target"))) { UseSolidsAsBounds = true },
 		["IntroCar"] = new((map, entity) => new IntroCar(entity.GetFloatProperty("scale", 6)))

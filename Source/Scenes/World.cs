@@ -66,16 +66,16 @@ public class World : Scene
 	public PacerTestSides PacerTestSide = PacerTestSides.Side2;
 	public AreaTrigger? PacerTestSide1;
 	public AreaTrigger? PacerTestSide2;
-	private int pacerTestScore = 0;
-	private int pacerTestMistakes = 0;
-	private const int MAX_PACER_TEST_MISTAKES = 2;
+	public int PacerTestScore = 0;
+	public int PacerTestMistakes = 0;
+	public const int MAX_PACER_TEST_MISTAKES = 2;
 	private int pacerTestLevel = 1;
 	private float pacerTestTimeLeft = 9;
 	
 	public readonly int[] PacerTestLevelStart = 
 		[0, 7, 15, 23, 32, 41, 51, 61, 72, 83, 94, 106, 118, 131, 144, 157, 171, 185, 200, 215, 231, 247];
 	public readonly float[] PacerTestTimes =
-		[9, 8, 7.58f, 7.2f, 6.86f, 6.55f, 6.26f, 6, 55.76f, 5.54f, 5.33f, 5.14f, 4.97f, 4.8f, 4.65f, 4.5f, 4.36f, 4.24f, 4.11f, 4, 3.89f];
+		[9, 8, 7.58f, 7.2f, 6.86f, 6.55f, 6.26f, 6, 5.76f, 5.54f, 5.33f, 5.14f, 4.97f, 4.8f, 4.65f, 4.5f, 4.36f, 4.24f, 4.11f, 4, 3.89f];
 
 	public World(EntryInfo entry)
 	{
@@ -386,10 +386,11 @@ public class World : Scene
 					// Fail
 					else
 					{
-						pacerTestMistakes++;
-						if (pacerTestMistakes >= MAX_PACER_TEST_MISTAKES)
+						PacerTestMistakes++;
+						if (PacerTestMistakes >= MAX_PACER_TEST_MISTAKES)
 						{
 							StartedPacerTest = false;
+							if (PacerTestScore > Save.CurrentRecord.PacerHighScore) Save.CurrentRecord.PacerHighScore = PacerTestScore;
 						}
 						else goto NextLap;
 					}
@@ -397,10 +398,10 @@ public class World : Scene
 					NextLap:
 					{
 						PacerTestSide = PacerTestSide == PacerTestSides.Side1 ? PacerTestSides.Side2 : PacerTestSides.Side1;
-						pacerTestScore++;
+						PacerTestScore++;
 
 						// Next level
-						if (pacerTestLevel - 1 < PacerTestLevelStart.Length && pacerTestScore >= PacerTestLevelStart[pacerTestLevel])
+						if (pacerTestLevel - 1 < PacerTestLevelStart.Length && PacerTestScore >= PacerTestLevelStart[pacerTestLevel])
 						{
 							pacerTestLevel++;
 							Audio.Play(Sfx.sfx_touch_switch_last);
@@ -874,14 +875,19 @@ public class World : Scene
 				// pacer test
 				if (StartedPacerTest)
 				{
-					batch.PushMatrix(Matrix3x2.CreateScale(2) * Matrix3x2.CreateTranslation(bounds.BottomCenter - new Vec2(0, font.LineHeight * 3 + 20)));
-					UI.Text(batch, pacerTestScore.ToString(), Vec2.Zero, new Vec2(0.5f, 1f), Color.White);
+					batch.PushMatrix(Matrix3x2.CreateScale(2) * Matrix3x2.CreateTranslation(bounds.BottomCenter - new Vec2(0, font.LineHeight * 3.75f + 20)));
+					UI.Text(batch, PacerTestScore.ToString(), Vec2.Zero, new Vec2(0.5f, 1f), Color.White);
 					batch.PopMatrix();
+
+					batch.PushMatrix(Matrix3x2.CreateScale(0.75f) * Matrix3x2.CreateTranslation(bounds.BottomCenter - new Vec2(0, font.LineHeight * 3.375f + 10)));
+					UI.Text(batch, $"High: {Save.CurrentRecord.PacerHighScore}", Vec2.Zero, new Vec2(0.5f, 1), Color.LightGray);
+					batch.PopMatrix();
+					
 					UI.Text(batch, pacerTestTimeLeft.ToString("0.00"), bounds.BottomCenter - new Vec2(0, font.LineHeight * 2 + 10), new Vec2(0.5f, 1), Color.White);
 					UI.Text(batch, $"Level {pacerTestLevel}", bounds.BottomCenter - new Vec2(0, font.LineHeight + 10), new Vec2(0.5f, 1), Color.LightGray);
 
 					string str = "";
-					for (int i = 0; i < pacerTestMistakes; i++)
+					for (int i = 0; i < PacerTestMistakes; i++)
 					{
 						str += "X";
 					}
@@ -965,8 +971,8 @@ public class World : Scene
 	{
 		PacerTestSide = PacerTestSides.Side2;
 		StartedPacerTest = true;
-		pacerTestMistakes = 0;
-		pacerTestScore = 0;
+		PacerTestMistakes = 0;
+		PacerTestScore = 0;
 		pacerTestLevel = 1;
 		pacerTestTimeLeft = PacerTestTimes[0];
 	}
