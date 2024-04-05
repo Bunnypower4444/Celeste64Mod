@@ -431,7 +431,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 				groundNormal = normal;
 				tCoyote = CoyoteTime;
 				coyoteZ = Position.Z;
-				if (tDashResetCooldown <= 0)
+				if (tDashResetCooldown <= 0 && RefillDashesOnGround)
 					RefillDash();
 			}
 			else
@@ -1257,6 +1257,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private float tNoDashJump;
 	private bool dashedOnGround;
 	private int dashTrailsCreated;
+	public bool RefillDashesOnGround = true;
 
 	private bool TryDash()
 	{

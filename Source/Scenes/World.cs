@@ -391,6 +391,7 @@ public class World : Scene
 						{
 							StartedPacerTest = false;
 							if (PacerTestScore > Save.CurrentRecord.PacerHighScore) Save.CurrentRecord.PacerHighScore = PacerTestScore;
+							Get<Player>()!.RefillDashesOnGround = true;
 						}
 						else goto NextLap;
 					}
@@ -969,11 +970,13 @@ public class World : Scene
 
 	public void StartPacerTest()
 	{
+		if (PacerTestSide1 == null || PacerTestSide2 == null) return;
 		PacerTestSide = PacerTestSides.Side2;
 		StartedPacerTest = true;
 		PacerTestMistakes = 0;
 		PacerTestScore = 0;
 		pacerTestLevel = 1;
 		pacerTestTimeLeft = PacerTestTimes[0];
+		Get<Player>()!.RefillDashesOnGround = false;
 	}
 }
