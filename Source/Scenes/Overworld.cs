@@ -563,7 +563,11 @@ public class Overworld : Scene
 								return false;
 							}
 						) as Cassette;
-						if (cassette != null) world.Get<Player>()?.EnterCassette(cassette);
+						if (cassette != null && world.Get<Player>() is {} player)
+						{
+							world.Camera.Position = cassette.Position + new Vec3(20, 20, 40);
+							player.EnterCassette(cassette);
+						}
 					}
 				});
 				
