@@ -391,6 +391,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		}
 
 		// Toggle Debug Flying
+		/*
 		if (Input.Keyboard.Pressed(Keys.F3) &&
 		 stateMachine.State != States.FeatherStart &&
 		 stateMachine.State != States.Cassette &&
@@ -404,6 +405,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		{
 			stateMachine.State = stateMachine.State == States.DebugFlying ? States.Normal : States.DebugFlying;
 		}
+		*/
 	}
 
 	public override void LateUpdate()
