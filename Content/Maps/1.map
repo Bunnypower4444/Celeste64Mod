@@ -14557,42 +14557,42 @@
 {
 "classname" "func_group"
 "_tb_type" "_tb_group"
-"_tb_name" "Pacer25"
+"_tb_name" "Pacer15"
 "_tb_id" "11"
 }
 // entity 633
 {
 "classname" "PacerStrawbUnlocker"
 "origin" "488 4072 3160"
-"score" "25"
+"score" "15"
 "_tb_group" "11"
 }
 // entity 634
 {
 "classname" "func_group"
 "_tb_type" "_tb_group"
-"_tb_name" "Pacer50"
+"_tb_name" "Pacer25"
 "_tb_id" "12"
 }
 // entity 635
 {
 "classname" "PacerStrawbUnlocker"
 "origin" "640 4072 3160"
-"score" "50"
+"score" "25"
 "_tb_group" "12"
 }
 // entity 636
 {
 "classname" "func_group"
 "_tb_type" "_tb_group"
-"_tb_name" "Pacer100"
+"_tb_name" "Pacer50"
 "_tb_id" "13"
 }
 // entity 637
 {
 "classname" "PacerStrawbUnlocker"
 "origin" "792 4072 3160"
-"score" "100"
+"score" "50"
 "_tb_group" "13"
 }
 // entity 638
@@ -14600,21 +14600,21 @@
 "classname" "Strawberry"
 "origin" "488 4072 3256"
 "locked" "1"
-"targetname" "Pacer25"
+"targetname" "Pacer15"
 }
 // entity 639
 {
 "classname" "Strawberry"
 "origin" "640 4072 3256"
 "locked" "1"
-"targetname" "Pacer50"
+"targetname" "Pacer25"
 }
 // entity 640
 {
 "classname" "Strawberry"
 "origin" "792 4072 3256"
 "locked" "1"
-"targetname" "Pacer100"
+"targetname" "Pacer50"
 }
 // entity 641
 {
