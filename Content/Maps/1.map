@@ -14180,7 +14180,7 @@
 // entity 600
 {
 "classname" "SignPost"
-"origin" "827.314 4048 3160"
+"origin" "891.314 4048 3160"
 "angle" "135"
 "dialog" "PacerTestSign"
 }
