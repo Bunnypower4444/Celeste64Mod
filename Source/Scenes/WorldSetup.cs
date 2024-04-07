@@ -53,16 +53,34 @@ public static class WorldSetup
         // Set character dialogue
         {
             // Badeline
-            var badeline = world.Get<Badeline>();
-            badeline?.SetDialogue(GetDialogueLines(BADELINE_DIALOG_KEYS_1));
+            if (world.Get<Badeline>() is {} badeline) {
+                badeline.SetDialogue(GetDialogueLines(BADELINE_DIALOG_KEYS_1));
+                badeline.DialogueFinishActions.Add(bad => {
+                    bad.DialogueIndex++;
+                    Save.CurrentRecord.IncFlag(Badeline.TALK_FLAG);
+                });
+                badeline.DialogueIndex = Save.CurrentRecord.GetFlag(Badeline.TALK_FLAG);
+            }
 
             // Theo
-            var theo = world.Get<Theo>();
-            theo?.SetDialogue(GetDialogueLines(THEO_DIALOG_KEYS_1));
+            if (world.Get<Theo>() is {} theo) {
+                theo.SetDialogue(GetDialogueLines(THEO_DIALOG_KEYS_1));
+                theo.DialogueFinishActions.Add(th => {
+                    th.DialogueIndex++;
+                    Save.CurrentRecord.IncFlag(Theo.TALK_FLAG);
+                });
+                theo.DialogueIndex = Save.CurrentRecord.GetFlag(Theo.TALK_FLAG);
+            }
 
             // Granny
-            var granny = world.Get<Granny>();
-            granny?.SetDialogue(GetDialogueLines(GRANNY_DIALOG_KEYS_1));
+            if (world.Get<Granny>() is {} granny) {
+                granny.SetDialogue(GetDialogueLines(GRANNY_DIALOG_KEYS_1));
+                granny.DialogueFinishActions.Add(gr => {
+                    gr.DialogueIndex++;
+                    Save.CurrentRecord.IncFlag(Granny.TALK_FLAG);
+                });
+                granny.DialogueIndex = Save.CurrentRecord.GetFlag(Granny.TALK_FLAG);
+            }
         }
     }
 

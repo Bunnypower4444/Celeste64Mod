@@ -17,6 +17,32 @@ public abstract class NPC : Actor, IHaveModels, IHaveSprites, IHavePushout, ICas
 	public float PushoutRadius { get; set; } = 8;
 	public float PointShadowAlpha { get; set; }
 
+	private int dialogueIndex;
+	public int DialogueIndex { get => dialogueIndex; set {
+		dialogueIndex = value;
+		CheckForDialog();
+	}}
+	public List<Language.Line>?[] Dialogue { get; private set; } = [];
+	public List<Action<NPC>> DialogueFinishActions { get; } = [];
+
+	public void SetDialogue(List<Language.Line>?[] dialog)
+	{
+		Dialogue = dialog;
+		CheckForDialog();
+	}
+
+	private void CheckForDialog()
+	{ 
+		InteractEnabled = DialogueIndex < Dialogue.Length && Dialogue[DialogueIndex] != null;
+		// InteractEnabled = Loc.HasLines($"Baddy{Save.CurrentRecord.GetFlag(TALK_FLAG) + 1}");
+	}
+
+	protected void RunDialogueActions()
+	{
+		foreach (var action in DialogueFinishActions)
+			action(this);
+	}
+
 	public NPC(SkinnedTemplate model)
 	{
 		Model = new SkinnedModel(model);
@@ -27,6 +53,7 @@ public abstract class NPC : Actor, IHaveModels, IHaveSprites, IHavePushout, ICas
 
 		LocalBounds = new BoundingBox(Vec3.Zero + Vec3.UnitZ * 4, 8);
 		PointShadowAlpha = 1;
+		CheckForDialog();
 	}
 
 	public abstract void Interact(Player player);

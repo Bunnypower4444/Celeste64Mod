@@ -7,9 +7,8 @@ public class Badeline : NPC
 
 	private readonly Hair hair;
 	private Color hairColor = 0x9B3FB5;
-	private List<Language.Line>?[] dialogue = [];
 
-	public Badeline() : base(Assets.Models["badeline"])
+    public Badeline() : base(Assets.Models["badeline"])
 	{
 		Model.Play("Bad.Idle");
 
@@ -32,7 +31,6 @@ public class Badeline : NPC
 
         InteractHoverOffset = new Vec3(0, -2, 16);
 		InteractRadius = 32;
-		CheckForDialog();
 	}
 
     public override void Update()
@@ -70,10 +68,10 @@ public class Badeline : NPC
 
 		//int index = Save.CurrentRecord.GetFlag(TALK_FLAG) + 1;
 		//yield return Co.Run(cs.Say(Loc.Lines($"Baddy{index}")));
-		var lines = dialogue[Save.CurrentRecord.GetFlag(TALK_FLAG)] ?? throw new Exception("Null dialogue");
+		var lines = Dialogue[DialogueIndex] ?? throw new Exception("Null dialogue");
         yield return Co.Run(cs.Say(lines));
-		Save.CurrentRecord.IncFlag(TALK_FLAG);
-		CheckForDialog();
+		//Save.CurrentRecord.IncFlag(TALK_FLAG);
+		RunDialogueActions();
 	}
 
     public override void CollectModels(List<(Actor Actor, Model Model)> populate)
@@ -81,18 +79,5 @@ public class Badeline : NPC
 		populate.Add((this, hair));
         base.CollectModels(populate);
     }
-
-	private void CheckForDialog()
-	{ 
-		var flag = Save.CurrentRecord.GetFlag(TALK_FLAG);
-		InteractEnabled = flag < dialogue.Length && dialogue[flag] != null;
-		// InteractEnabled = Loc.HasLines($"Baddy{Save.CurrentRecord.GetFlag(TALK_FLAG) + 1}");
-	}
-
-	public void SetDialogue(List<Language.Line>?[] dialog)
-	{
-		dialogue = dialog;
-		CheckForDialog();
-	}
 }
 

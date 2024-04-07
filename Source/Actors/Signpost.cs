@@ -14,6 +14,7 @@ public class Signpost : NPC, IHaveModels
 		InteractHoverOffset = new Vec3(0, 0, 16);
 		InteractRadius = 16;
 		PushoutRadius = 6;
+		SetDialogue([Loc.Lines(Conversation)]);
 	}
 
     public override void Interact(Player player)
@@ -24,6 +25,6 @@ public class Signpost : NPC, IHaveModels
 	private CoEnumerator Talk(Cutscene cs)
 	{
 		yield return Co.Run(cs.Face(World.Get<Player>(), Position));
-		yield return Co.Run(cs.Say(Loc.Lines(Conversation)));
+		yield return Co.Run(cs.Say(Dialogue[DialogueIndex] ?? throw new Exception("Null dialogue")));
 	}
 }
