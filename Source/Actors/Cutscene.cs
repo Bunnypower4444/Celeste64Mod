@@ -7,12 +7,16 @@ public class Cutscene : Actor, IHaveUI
 	public readonly Routine Routine;
 	private float ease = 0.0f;
 
+	private const float CharacterEaseInTime = 0.4f;
+	private const float CharacterOffset = 1.0f / 40;
+
 	private struct Saying
 	{
 		public string Face;
 		public string Text;
 		public int Characters;
 		public float Ease;
+		public float Time;
 		public bool Talking;
 	}
 	private Saying saying;
@@ -66,7 +70,8 @@ public class Cutscene : Actor, IHaveUI
 		var counter = 0.0f;
 		while (saying.Characters < saying.Text.Length)
 		{
-			counter += 30 * Time.Delta;
+			saying.Time += Time.Delta;
+			counter += Time.Delta / CharacterOffset;
 			while (counter >= 1)
 			{
 				saying.Characters++;
@@ -76,6 +81,22 @@ public class Cutscene : Actor, IHaveUI
 			if (Controls.Confirm.Pressed || Controls.Cancel.Pressed)
 			{
 				saying.Characters = saying.Text.Length;
+				saying.Time = saying.Text.Length * CharacterOffset + CharacterEaseInTime;
+				yield return Co.SingleFrame;
+				break;
+			}
+
+			yield return Co.SingleFrame;
+		}
+
+		// wait for last characters to ease in
+		while (saying.Time < (saying.Text.Length - 1) * CharacterOffset + CharacterEaseInTime)
+		{
+			saying.Time += Time.Delta;
+			if (Controls.Confirm.Pressed || Controls.Cancel.Pressed)
+			{
+				saying.Characters = saying.Text.Length;
+				saying.Time = (saying.Text.Length - 1) * CharacterOffset + CharacterEaseInTime;
 				yield return Co.SingleFrame;
 				break;
 			}
@@ -270,7 +291,24 @@ public class Cutscene : Actor, IHaveUI
 				batch.ImageFit(new Subtexture(face), faceBox, Vec2.One * 0.5f, Color.White, false, false);
 			}
 
-			batch.Text(font, saying.Text.AsSpan(0, saying.Characters), pos + new Vec2(Padding, Padding), Color.Black);
+			// Draw the letters
+			pos += new Vec2(Padding, Padding);
+			var origX = pos.X;
+			for (int i = 0; i < saying.Characters; i++)
+			{
+				if (saying.Text[i] == '\n')
+				{
+					pos.X = origX;
+					pos.Y += font.LineHeight;
+				}
+				else
+				{
+					var charEase = Ease.Quart.In(1 - Calc.Clamp((saying.Time - i * CharacterOffset) / CharacterEaseInTime));
+					batch.Text(font, saying.Text[i] + "", pos - new Vec2(0, charEase * font.LineHeight * 0.4f), Color.Black * (1 - charEase));
+					pos.X += font.WidthOf(saying.Text[i] + "");
+				}
+			}
+			// batch.Text(font, saying.Text.AsSpan(0, saying.Characters), pos + new Vec2(Padding, Padding), Color.Black);
 		}
 	}
 }
