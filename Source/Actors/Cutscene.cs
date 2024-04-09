@@ -1,4 +1,7 @@
 ﻿
+using System.Globalization;
+using System.Xml;
+
 namespace Celeste64;
 
 public class Cutscene : Actor, IHaveUI
@@ -10,6 +13,8 @@ public class Cutscene : Actor, IHaveUI
 	private const float CharacterEaseInTime = 0.4f;
 	private const float CharacterOffset = 1.0f / 40;
 
+	// TODO add a table for colors so you can put the name of the color in the dialogue
+
 	private struct Saying
 	{
 		public string Face;
@@ -17,7 +22,10 @@ public class Cutscene : Actor, IHaveUI
 		public int Characters;
 		public float Ease;
 		public float Time;
+		public Dictionary<int, float> Delays;
+		public XmlDocument Document;
 		public bool Talking;
+		public float Delay;
 	}
 	private Saying saying;
 	private AudioHandle dialogSnapshot;
@@ -31,6 +39,114 @@ public class Cutscene : Actor, IHaveUI
 		Routine = new();
 		FreezeGame = freezeEverythingExceptMe;
 		UpdateOffScreen = true;
+	}
+
+	// Left angled bracket (<)
+	private const string LeftTag = "left";
+	// Right angled bracket (>)
+	private const string RightTag = "right";
+	// Waits for the text to finish easing in, then waits a certain duration specified by the "time" attribute
+	private const string DelayTag = "d";
+	// Sets the color of the text inside the tag to a hex color specified by the "color" attribute
+	private const string ColorTag = "c";
+
+    private static readonly Dictionary<string, string> ReplaceTags = new() {
+        [LeftTag] = "<",
+		[RightTag] = ">"
+	};
+
+	public static XmlDocument ParseDialogue(string line, out string text, out Dictionary<int, float> delays)
+	{
+		XmlDocument doc = new();
+		doc.LoadXml($"<text>{line}</text>");	// Add root tag
+		var _delays = new Dictionary<int, float>();
+		var _text = "";
+		
+		void recurse(XmlNode node) {
+			foreach (XmlNode child in node)
+			{
+				switch (child.NodeType)
+				{
+					case XmlNodeType.Text:
+						_text += child.InnerText;
+						break;
+
+					case XmlNodeType.Element:
+						if (ReplaceTags.TryGetValue(child.Name, out var str))
+							_text += str;
+						else if (child.Name == DelayTag && child.Attributes != null && child.Attributes["time"] is {} attr)
+							if (float.TryParse(attr.Value, out var value))
+							{
+								// Add a bunch of null characters so the text eases in completely before the delay starts
+								_text += new string('\0', (int)MathF.Ceiling(CharacterEaseInTime / CharacterOffset));
+
+								if (_delays.ContainsKey(_text.Length)) _delays[_text.Length] += value;
+								else _delays[_text.Length] = value;
+							}
+							else throw new Exception("Invalid float value for attribute 'time' in dialogue delay tag");
+						break;
+				}
+
+				if (child.HasChildNodes)
+				{
+					recurse(child);
+				}
+			}
+		}
+
+		if (doc.ChildNodes[0] is {} node)	// so the compiler will shut up
+			recurse(node);
+
+		text = _text;
+		delays = _delays;
+
+		return doc;
+		/*
+		string result = "";
+		actualTextLength = 0;
+		delays = new float[line.Length];
+		var inTag = false;
+		var inTagStr = "";
+		foreach (var ch in line)
+		{
+			if (!inTag && ch != '<')
+			{
+				result += ch;
+				actualTextLength++;
+			}
+			else if (!inTag && ch == '<')
+			{
+				inTag = true;
+				inTagStr = "<";
+			}
+			else if (inTag && ch != '>')
+			{
+				inTagStr += ch;
+			}
+			else if (inTag && ch == '>')
+			{
+				inTagStr += ch;
+				var split = inTagStr[1..^1].Split(" ");
+				var tagName = split[0];
+				if (ReplaceTags.TryGetValue(tagName, out var value))
+				{
+					result += value;
+					actualTextLength += value.Length;
+				}
+				else if (tagName == DelayTag)
+				{
+					delays[actualTextLength] = float.Parse(split[1]);
+				}
+				else
+					result += inTagStr;
+				inTag = false;
+			}
+		}
+
+		if (inTag) throw new Exception("Unclosed tag in dialogue");
+
+		return result;
+		*/
 	}
 
     public override void Destroyed()
@@ -51,7 +167,14 @@ public class Cutscene : Actor, IHaveUI
 
 	public CoEnumerator Say(string face, string line, string? voice = null)
 	{
-		saying = new Saying() { Face = $"faces/{face}", Text = line, Talking = false };
+		var doc = ParseDialogue(line, out var text, out var delays);
+		saying = new Saying() {
+			Face = $"faces/{face}",
+			Text = text,
+			Talking = false,
+			Delays = delays,
+			Document = doc
+		};
 		dialogSnapshot = Audio.Play(Sfx.snapshot_dialog);
 
 		// ease in
@@ -70,20 +193,35 @@ public class Cutscene : Actor, IHaveUI
 		var counter = 0.0f;
 		while (saying.Characters < saying.Text.Length)
 		{
-			saying.Time += Time.Delta;
-			counter += Time.Delta / CharacterOffset;
-			while (counter >= 1)
-			{
-				saying.Characters++;
-				counter -= 1;
-			}
-
 			if (Controls.Confirm.Pressed || Controls.Cancel.Pressed)
 			{
 				saying.Characters = saying.Text.Length;
 				saying.Time = saying.Text.Length * CharacterOffset + CharacterEaseInTime;
 				yield return Co.SingleFrame;
 				break;
+			}
+
+			var wasDelay = saying.Delay > 0;
+			while (saying.Delay > 0)
+			{
+				saying.Delay -= Time.Delta;
+				yield return Co.SingleFrame;
+			}
+			if (wasDelay) saying.Characters++;
+
+			saying.Time += Time.Delta;
+			counter += Time.Delta / CharacterOffset;
+			while (counter >= 1)
+			{
+				saying.Characters++;
+				counter -= 1;
+
+				if (saying.Delays.TryGetValue(saying.Characters, out var d) && d > 0)
+				{
+					saying.Delay = d;
+					saying.Characters--;
+					break;
+				}
 			}
 
 			yield return Co.SingleFrame;
@@ -291,24 +429,85 @@ public class Cutscene : Actor, IHaveUI
 				batch.ImageFit(new Subtexture(face), faceBox, Vec2.One * 0.5f, Color.White, false, false);
 			}
 
-			// Draw the letters
-			pos += new Vec2(Padding, Padding);
-			var origX = pos.X;
-			for (int i = 0; i < saying.Characters; i++)
-			{
-				if (saying.Text[i] == '\n')
-				{
-					pos.X = origX;
-					pos.Y += font.LineHeight;
-				}
-				else
-				{
-					var charEase = Ease.Quart.In(1 - Calc.Clamp((saying.Time - i * CharacterOffset) / CharacterEaseInTime));
-					batch.Text(font, saying.Text[i] + "", pos - new Vec2(0, charEase * font.LineHeight * 0.4f), Color.Black * (1 - charEase));
-					pos.X += font.WidthOf(saying.Text[i] + "");
-				}
-			}
-			// batch.Text(font, saying.Text.AsSpan(0, saying.Characters), pos + new Vec2(Padding, Padding), Color.Black);
+            // Draw the letters
+            RenderText(batch, font, pos + new Vec2(Padding, Padding), saying);
 		}
+	}
+
+	private static void RenderText(Batcher batch, SpriteFont font, Vec2 pos, Saying saying)
+	{
+		var origX = pos.X;
+		var i = 0;
+		Stack<Color> colors = [];
+		colors.Push(Color.Black);
+
+		void recurse(XmlNode node)
+		{
+			foreach (XmlNode child in node)
+			{
+				bool pushedColor = false;
+				switch (child.NodeType)
+				{
+					case XmlNodeType.Text:
+						foreach (var _ in child.InnerText)
+						{
+							if (i >= saying.Characters) return;
+							if (saying.Text[i] == '\n')
+							{
+								pos.X = origX;
+								pos.Y += font.LineHeight;
+							}
+							else
+							{
+								// Skip null characters
+								while (saying.Text[i] == '\0' && i < saying.Characters)
+									i++;
+								
+								var charEase = Ease.Quart.In(1 - Calc.Clamp((saying.Time - i * CharacterOffset) / CharacterEaseInTime));
+								batch.Text(font, saying.Text[i] + "", pos - new Vec2(0, charEase * font.LineHeight * 0.4f), colors.Peek() * (1 - charEase));
+								pos.X += font.WidthOf(saying.Text[i] + "");
+							}
+							i++;
+						}
+						break;
+
+					case XmlNodeType.Element:
+						if (child.Name == ColorTag && child.Attributes != null && child.Attributes["color"] is {} attr)
+						{
+							if (int.TryParse(attr.Value, NumberStyles.HexNumber, CultureInfo.CurrentCulture, out var result))
+							{
+								colors.Push(result);
+								pushedColor = true;
+							}
+							else throw new Exception("Invalid hexadecimal value for attribute 'color' in dialogue color tag");
+						}
+						break;
+				}
+
+				if (child.HasChildNodes)
+					recurse(child);
+
+				if (pushedColor)
+					colors.Pop();
+			}
+		}
+		recurse(saying.Document);
+		/*
+		for (int i = 0; i < saying.Characters; i++)
+		{
+			if (saying.Text[i] == '\n')
+			{
+				pos.X = origX;
+				pos.Y += font.LineHeight;
+			}
+			else
+			{
+				var charEase = Ease.Quart.In(1 - Calc.Clamp((saying.Time - i * CharacterOffset) / CharacterEaseInTime));
+				batch.Text(font, saying.Text[i] + "", pos - new Vec2(0, charEase * font.LineHeight * 0.4f), Color.Black * (1 - charEase));
+				pos.X += font.WidthOf(saying.Text[i] + "");
+			}
+		}
+		*/
+		// batch.Text(font, saying.Text.AsSpan(0, saying.Characters), pos + new Vec2(Padding, Padding), Color.Black);
 	}
 }
