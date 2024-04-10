@@ -49,7 +49,7 @@ public class Overworld : Scene
 				Menu.Add(new Menu.Option(Loc.Str("Restart")));
 				Complete = record.Strawberries.Count >= Level.Strawberries;
 
-				// Checkpoints
+				// Checkpoints (also includes Start, but only appears if you have a checkpoint other than Start)
 				if (record.ReachedCheckpoints.Count > 0) 
 				{
 					ASides = [];
@@ -65,7 +65,7 @@ public class Overworld : Scene
 						var toArray = Assets.Maps[Level.Map]?.Checkpoints.ToArray();
 						for ( ; checkpointCount < (i + 1) * 4 && checkpointIndex < toArray?.Length; checkpointIndex++) {
 							var checkpoint = toArray is not null ? toArray[checkpointIndex] : string.Empty;
-							if (record.ReachedCheckpoints.Contains(checkpoint))
+							if (record.ReachedCheckpoints.Contains(checkpoint) || checkpoint == Map.StartCheckpoint)
 							{
 								ASides[i].Add(new Menu.Option(checkpoint));
 								checkpointCount++;
