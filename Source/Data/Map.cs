@@ -18,7 +18,7 @@ public class Map
 		public Func<Map, SledgeEntity, Actor?> Create = create;
 	}
 
-	public const string StartCheckpoint = "Start";
+	private const string StartCheckpoint = "Start";
 
 	public readonly string Name;
 	public readonly string Filename;
