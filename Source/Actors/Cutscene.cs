@@ -77,9 +77,6 @@ public class Cutscene : Actor, IHaveUI
 						else if (child.Name == DelayTag && child.Attributes != null && child.Attributes["time"] is {} attr)
 							if (float.TryParse(attr.Value, out var value))
 							{
-								// Add a bunch of null characters so the text eases in completely before the delay starts
-								_text += new string('\0', (int)MathF.Ceiling(CharacterEaseInTime / CharacterOffset));
-
 								if (_delays.ContainsKey(_text.Length)) _delays[_text.Length] += value;
 								else _delays[_text.Length] = value;
 							}
@@ -175,6 +172,10 @@ public class Cutscene : Actor, IHaveUI
 			Delays = delays,
 			Document = doc
 		};
+		float totalTime = (saying.Text.Length - 1) * CharacterOffset + CharacterEaseInTime;
+		if (delays.Count > 0)
+			totalTime += delays.Values.Aggregate((acc, value) => acc + value);
+
 		dialogSnapshot = Audio.Play(Sfx.snapshot_dialog);
 
 		// ease in
@@ -196,20 +197,21 @@ public class Cutscene : Actor, IHaveUI
 			if (Controls.Confirm.Pressed || Controls.Cancel.Pressed)
 			{
 				saying.Characters = saying.Text.Length;
-				saying.Time = saying.Text.Length * CharacterOffset + CharacterEaseInTime;
+				saying.Time = totalTime;
 				yield return Co.SingleFrame;
 				break;
 			}
 
+			saying.Time += Time.Delta;
 			var wasDelay = saying.Delay > 0;
 			while (saying.Delay > 0)
 			{
 				saying.Delay -= Time.Delta;
 				yield return Co.SingleFrame;
+				saying.Time += Time.Delta;
 			}
 			if (wasDelay) saying.Characters++;
 
-			saying.Time += Time.Delta;
 			counter += Time.Delta / CharacterOffset;
 			while (counter >= 1)
 			{
@@ -228,13 +230,13 @@ public class Cutscene : Actor, IHaveUI
 		}
 
 		// wait for last characters to ease in
-		while (saying.Time < (saying.Text.Length - 1) * CharacterOffset + CharacterEaseInTime)
+		while (saying.Time < totalTime)
 		{
 			saying.Time += Time.Delta;
 			if (Controls.Confirm.Pressed || Controls.Cancel.Pressed)
 			{
 				saying.Characters = saying.Text.Length;
-				saying.Time = (saying.Text.Length - 1) * CharacterOffset + CharacterEaseInTime;
+				saying.Time = totalTime;
 				yield return Co.SingleFrame;
 				break;
 			}
@@ -438,6 +440,7 @@ public class Cutscene : Actor, IHaveUI
 	{
 		var origX = pos.X;
 		var i = 0;
+		var timeOffset = 0f;
 		Stack<Color> colors = [];
 		colors.Push(Color.Black);
 
@@ -452,18 +455,17 @@ public class Cutscene : Actor, IHaveUI
 						foreach (var _ in child.InnerText)
 						{
 							if (i >= saying.Characters) return;
+							if (saying.Delays.TryGetValue(i, out var d))
+								timeOffset += d;
+
 							if (saying.Text[i] == '\n')
 							{
 								pos.X = origX;
 								pos.Y += font.LineHeight;
 							}
 							else
-							{
-								// Skip null characters
-								while (saying.Text[i] == '\0' && i < saying.Characters)
-									i++;
-								
-								var charEase = Ease.Quart.In(1 - Calc.Clamp((saying.Time - i * CharacterOffset) / CharacterEaseInTime));
+							{								
+								var charEase = Ease.Quart.In(1 - Calc.Clamp((saying.Time - i * CharacterOffset - timeOffset) / CharacterEaseInTime));
 								batch.Text(font, saying.Text[i] + "", pos - new Vec2(0, charEase * font.LineHeight * 0.4f), colors.Peek() * (1 - charEase));
 								pos.X += font.WidthOf(saying.Text[i] + "");
 							}
