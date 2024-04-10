@@ -30,6 +30,7 @@ public class Cutscene : Actor, IHaveUI
 	private Saying saying;
 	private AudioHandle dialogSnapshot;
 	private float timer = 0;
+	private readonly Random random = new();
 
 	public bool FreezeGame = false;
 
@@ -45,15 +46,46 @@ public class Cutscene : Actor, IHaveUI
 	private const string LeftTag = "left";
 	// Right angled bracket (>)
 	private const string RightTag = "right";
+
 	// Waits for the text to finish easing in, then waits a certain duration specified by the "time" attribute
 	private const string DelayTag = "d";
+	// Defines the duration of a delay tag (in seconds)
+	private const string DelayTimeAttribute = "time";
+
 	// Sets the color of the text inside the tag to a hex color specified by the "color" attribute
 	private const string ColorTag = "c";
+	// Defines the color of a color tag, uses hexadecmial format (ex. <c color="00efef">)
+	private const string ColorAttribute = "color";
+
+	// Makes text inside the tag move up and down like a wave
+	private const string WavyTag = "wavy";
+	// Optional wave offset that shifts the wave left by the specified amount of wavelengths in wavy tags
+	private const string WaveShiftAttribute = "offset";
+
+	// Makes text inside the tag shake
+	private const string ShakeTag = "shake";
+	// Optional shake strength in shake tags (defaults to 1)
+	private const string ShakeStrengthAtribute = "strength";
 
     private static readonly Dictionary<string, string> ReplaceTags = new() {
         [LeftTag] = "<",
 		[RightTag] = ">"
 	};
+
+	private static bool GetFloatAttribute(XmlNode node, string attribute, out float result)
+	{
+		result = 0;
+		if (node.Attributes != null && node.Attributes[attribute] is {} attr)
+		{
+			if (float.TryParse(attr.Value, out var value))
+			{
+				result = value;
+				return true;
+			}
+			else throw new Exception($"Invalid float value for attribute '{attribute}' in dialogue delay tag ({attr.Value})");
+		}
+		return false;
+	}
 
 	public static XmlDocument ParseDialogue(string line, out string text, out Dictionary<int, float> delays)
 	{
@@ -74,13 +106,15 @@ public class Cutscene : Actor, IHaveUI
 					case XmlNodeType.Element:
 						if (ReplaceTags.TryGetValue(child.Name, out var str))
 							_text += str;
-						else if (child.Name == DelayTag && child.Attributes != null && child.Attributes["time"] is {} attr)
-							if (float.TryParse(attr.Value, out var value))
+						
+						if (child.Name == DelayTag)
+						{
+							if (GetFloatAttribute(child, DelayTimeAttribute, out var value))
 							{
 								if (_delays.ContainsKey(_text.Length)) _delays[_text.Length] += value;
 								else _delays[_text.Length] = value;
 							}
-							else throw new Exception("Invalid float value for attribute 'time' in dialogue delay tag");
+						}
 						break;
 				}
 
@@ -91,8 +125,7 @@ public class Cutscene : Actor, IHaveUI
 			}
 		}
 
-		if (doc.ChildNodes[0] is {} node)	// so the compiler will shut up
-			recurse(node);
+		recurse(doc.FirstChild!);
 
 		text = _text;
 		delays = _delays;
@@ -436,7 +469,7 @@ public class Cutscene : Actor, IHaveUI
 		}
 	}
 
-	private static void RenderText(Batcher batch, SpriteFont font, Vec2 pos, Saying saying)
+	private void RenderText(Batcher batch, SpriteFont font, Vec2 pos, Saying saying)
 	{
 		var origX = pos.X;
 		var i = 0;
@@ -444,11 +477,21 @@ public class Cutscene : Actor, IHaveUI
 		Stack<Color> colors = [];
 		colors.Push(Color.Black);
 
+		var wavy = false;
+		var waveOffset = 0f;
+
+		var shakeStr = 0f;
+		Vec2 shakeVector = Vec2.Zero;
+
 		void recurse(XmlNode node)
 		{
 			foreach (XmlNode child in node)
 			{
-				bool pushedColor = false;
+				var pushedColor = false;
+				var pWavy = wavy;
+				var pWaveOffset = waveOffset;
+				var pShakeStr = shakeStr;
+				var pShakeVector = shakeVector;
 				switch (child.NodeType)
 				{
 					case XmlNodeType.Text:
@@ -466,7 +509,13 @@ public class Cutscene : Actor, IHaveUI
 							else
 							{								
 								var charEase = Ease.Quart.In(1 - Calc.Clamp((saying.Time - i * CharacterOffset - timeOffset) / CharacterEaseInTime));
-								batch.Text(font, saying.Text[i] + "", pos - new Vec2(0, charEase * font.LineHeight * 0.4f), colors.Peek() * (1 - charEase));
+								var wave = wavy ? MathF.Sin(4 * MathF.PI * (timer - i * CharacterOffset - timeOffset) + 2 * MathF.PI * waveOffset) : 0;
+
+								batch.Text(font, saying.Text[i] + "",
+									pos - new Vec2(0, charEase * font.LineHeight * 0.4f) +
+										new Vec2(0, wave * font.LineHeight / 8) + shakeVector * shakeStr * font.LineHeight / 4,
+									colors.Peek() * (1 - charEase));
+								
 								pos.X += font.WidthOf(saying.Text[i] + "");
 							}
 							i++;
@@ -474,14 +523,32 @@ public class Cutscene : Actor, IHaveUI
 						break;
 
 					case XmlNodeType.Element:
-						if (child.Name == ColorTag && child.Attributes != null && child.Attributes["color"] is {} attr)
+						switch (child.Name)
 						{
-							if (int.TryParse(attr.Value, NumberStyles.HexNumber, CultureInfo.CurrentCulture, out var result))
-							{
-								colors.Push(result);
-								pushedColor = true;
-							}
-							else throw new Exception("Invalid hexadecimal value for attribute 'color' in dialogue color tag");
+							case ColorTag:
+								if (child.Attributes != null && child.Attributes[ColorAttribute] is {} attr)
+								{
+									if (int.TryParse(attr.Value, NumberStyles.HexNumber, CultureInfo.CurrentCulture, out var result))
+									{
+										colors.Push(result);
+										pushedColor = true;
+									}
+									else throw new Exception($"Invalid hexadecimal value for attribute 'color' in dialogue color tag ({attr.Value})");
+								}
+								break;
+
+							case WavyTag:
+								wavy = true;
+								if (GetFloatAttribute(child, WaveShiftAttribute, out var shift))
+									waveOffset = shift;
+								break;
+
+							case ShakeTag:
+								if (GetFloatAttribute(child, ShakeStrengthAtribute, out var str))
+									shakeStr = str;
+								else shakeStr = 1;
+								shakeVector = new Vec2(random.NextSingle() * 2 - 1, random.NextSingle() * 2 - 1);
+                                break;
 						}
 						break;
 				}
@@ -489,8 +556,13 @@ public class Cutscene : Actor, IHaveUI
 				if (child.HasChildNodes)
 					recurse(child);
 
+				// Reset stuff to previous state
 				if (pushedColor)
 					colors.Pop();
+				wavy = pWavy;
+				waveOffset = pWaveOffset;
+				shakeStr = pShakeStr;
+				shakeVector = pShakeVector;
 			}
 		}
 		recurse(saying.Document);
