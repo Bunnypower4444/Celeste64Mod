@@ -91,7 +91,7 @@ public class Overworld : Scene
 							var submap = toArray is not null ? toArray[submapIndex] : string.Empty;
 							if (unlockedMaps.Contains(submap) && submap != string.Empty)
 							{
-								BSides[i].Add(new Menu.Option(submap));
+								BSides[i].Add(new Menu.Option(submap + (!record.CompletedSubMaps.Contains(submap) ? " (!)" : "")));
 								submapCount++;
 							}
 						}
@@ -397,6 +397,9 @@ public class Overworld : Scene
 					Game.Instance.Music.Stop();
 					state = States.EnteringSubmap;
 					currentEntry.SelectedSubmap = currentEntry.BSides?[currentEntry.currentBSideMenuIndex].CurrentItem.Label;
+					// remove incomplete submap alert
+					if (currentEntry.SelectedSubmap?.EndsWith(" (!)") ?? false)
+						currentEntry.SelectedSubmap = currentEntry.SelectedSubmap[0 .. ^4];
 				}
 			}
 			else if (Controls.Cancel.ConsumePress())
