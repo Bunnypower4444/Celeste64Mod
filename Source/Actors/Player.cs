@@ -144,6 +144,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private record struct CameraOverride(Vec3 Position, Vec3 LookAt);
 	private CameraOverride? cameraOverride = null;
 	private Vec3 cameraOriginPos;
+	private Vec3 cameraDestinationPos;
 
 	private float tCoyote;
 	private float coyoteZ;
@@ -491,6 +492,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			{
 				GetCameraTarget(out lookAt, out cameraPos, out _);
 			}
+			cameraDestinationPos = cameraPos;
 			
             World.Camera.Position += (cameraPos - World.Camera.Position) * (1 - MathF.Pow(0.01f, Time.Delta));
             World.Camera.LookAt = lookAt;
@@ -621,7 +623,11 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 			Vec2 forward, side;
 			
-            var cameraForward = (World.Camera.LookAt - World.Camera.Position).Normalized().XY();
+            // HACK:  Calculate camera forward vector based on World.CameraDestPos
+			// instead of World.Camera.Position.  This allows the player to keep going
+			// in the same direction (not slightly shifted left/right), even though
+			// the camera always tries to be "ahead" of the player.
+            var cameraForward = (World.Camera.LookAt - cameraDestinationPos).Normalized().XY();
 			if (cameraForward.X == 0 && cameraForward.Y == 0)
 				forward = targetFacing;
 			else
