@@ -558,6 +558,60 @@
 				"Text": "Maybe... maybe it'll be okay."
 			}
 		],
+		"Baddy4": [
+			{
+				"Face": "madeline/Happy",
+				"Voice": "madeline/baddy3_03_m1",
+				"Text": "Come on, <d time=\"0.25\" />let's go!"
+			},
+			{
+				"Face": "baddy/UncertainB",
+				"Voice": "badeline/baddy1_02_b1",
+				"Text": "...<d time=\"0.2\" />Already?"
+			},
+			{
+				"Face": "baddy/UncertainA",
+				"Voice": "badeline/baddy3_02_b2",
+				"Text": "I'm just afraid we're not ready yet."
+			},
+			{
+				"Face": "baddy/UncertainB",
+				"Voice": "madeline/baddy3_04_m2",
+				"Text": "There are still so many\n<c color=\"f02943\">alternate sides</c> of this one place..."
+			},
+			{
+				"Face": "baddy/UncertainB",
+				"Voice": "badeline/baddy3_07_b4",
+				"Text": "We should try to\nexplore them first."
+			}
+		],
+		"Baddy5": [
+			{
+				"Face": "baddy/UncertainB",
+				"Voice": "badeline/baddy3_02_b2",
+				"Text": "So... <d time=\"0.25\" />are you ready?",
+				"Choices": ["yes", "no"]
+			},
+			{
+				"Face": "madeline/Default",
+				"Voice": "madeline/baddy1_01_m1",
+				"Text": "I'm ready.",
+				"ID": "yes"
+			},
+			{
+				"Face": "baddy/UncertainA",
+				"Voice": "badeline/baddy1_21_b9",
+				"Text": "Let's... let's do it.",
+				"EndDialogue": true
+			},
+			{
+				"Face": "madeline/Default",
+				"Voice": "madeline/baddy1_01_m1",
+				"Text": "Not yet.",
+				"ID": "no",
+				"EndDialogue": true
+			}
+		],
 
 		"Sign1": [
 			{

@@ -33,7 +33,7 @@ public static class WorldSetup
 
     #region 1 - Forsaken City
 
-    private static readonly string?[] BADELINE_DIALOG_KEYS_1 = ["Baddy1", "Baddy2", "Baddy3"];
+    private static readonly string?[] BADELINE_DIALOG_KEYS_1 = ["Baddy1", "Baddy2", "Baddy3", "Baddy4", "Baddy5"];
     private static readonly string?[] THEO_DIALOG_KEYS_1 = ["Theo1", "Theo2", "Theo3"];
     private static readonly string?[] GRANNY_DIALOG_KEYS_1 = ["Granny1", "Granny2", "Granny3"];
     
@@ -54,8 +54,54 @@ public static class WorldSetup
         {
             // Badeline
             if (world.Get<Badeline>() is {} badeline) {
-                badeline.SetDialogue(GetDialogueLines(BADELINE_DIALOG_KEYS_1));
+                var lines = GetDialogueLines(BADELINE_DIALOG_KEYS_1);
+                badeline.SetDialogueFactory(index => {
+                    // check if completed all b-sides
+                    if (badeline.DialogueIndex == 3 && Save.CurrentRecord.CompletedSubMaps.Count < Assets.Maps[world.Entry.Map].Submaps.Count)
+                    {
+                        return lines[3];
+                    }
+                    else if (badeline.DialogueIndex == 3 && Save.CurrentRecord.CompletedSubMaps.Count >= Assets.Maps[world.Entry.Map].Submaps.Count)
+                    {
+                        return lines[4];
+                    }
+                    else if (badeline.DialogueIndex == 4)
+                        return null;
+                    
+                    return lines[index];
+                });
                 badeline.DialogueFinishActions.Add((bad, choices) => {
+                    // Completed all submaps
+                    if (bad.DialogueIndex == 3 && Save.CurrentRecord.CompletedSubMaps.Count >= Assets.Maps[world.Entry.Map].Submaps.Count)
+                    {
+                        if (choices.Contains("no"))
+                            return;
+                        else 
+                        {
+                            bad.DialogueIndex++;
+                            Save.CurrentRecord.IncFlag(Badeline.TALK_FLAG);
+                            Game.Instance.Goto(new() {
+                                Mode = Transition.Modes.Replace,
+                                Scene = () => new World(new("1", Save.CurrentRecord.Checkpoint, false, World.EntryReasons.Entered)),
+                                ToBlack = new SnowWipe(),
+                                StopMusic = true,
+                                HoldOnBlackFor = 0.5f,
+                                ToPause = false,
+                                FromPause = false
+                            });
+
+                            // Finished with all dialogue (commenting out since i didn't make the new level yet)
+                            // bad.DialogueIndex = 4;
+                            // Save.CurrentRecord.SetFlag(Badeline.TALK_FLAG, 4);
+                            // return;
+                        }
+                    }
+
+                    // don't increase index
+                    if (bad.DialogueIndex > 2)
+                    {
+                        return;
+                    }
                     bad.DialogueIndex++;
                     Save.CurrentRecord.IncFlag(Badeline.TALK_FLAG);
                 });

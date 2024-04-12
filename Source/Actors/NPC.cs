@@ -22,19 +22,38 @@ public abstract class NPC : Actor, IHaveModels, IHaveSprites, IHavePushout, ICas
 		dialogueIndex = value;
 		CheckForDialog();
 	}}
-	public List<Language.Line>?[] Dialogue { get; private set; } = [];
+
+	private List<Language.Line>?[] dialogue = [];
+	private Func<int, List<Language.Line>?>? dialogueFactory;
+	public List<Language.Line>?[] Dialogue => dialogue;
 	public List<Action<NPC, List<string>>> DialogueFinishActions { get; } = [];
 
 	public void SetDialogue(List<Language.Line>?[] dialog)
 	{
-		Dialogue = dialog;
+		dialogue = dialog;
 		CheckForDialog();
 	}
 
-	private void CheckForDialog()
+	public void SetDialogueFactory(Func<int, List<Language.Line>?>? dialogFactory)
+	{
+		dialogueFactory = dialogFactory;
+	}
+
+	public bool CheckForDialog()
 	{ 
-		InteractEnabled = DialogueIndex < Dialogue.Length && Dialogue[DialogueIndex] != null;
-		// InteractEnabled = Loc.HasLines($"Baddy{Save.CurrentRecord.GetFlag(TALK_FLAG) + 1}");
+		if (dialogueFactory != null)
+			InteractEnabled = dialogueFactory(DialogueIndex) != null;
+		else InteractEnabled = DialogueIndex < Dialogue.Length && Dialogue[DialogueIndex] != null;
+		return InteractEnabled;
+	}
+
+	public List<Language.Line>? GetCurrentLine()
+	{
+		if (dialogueFactory != null)
+			return dialogueFactory(DialogueIndex);
+		else if (DialogueIndex < Dialogue.Length)
+			return Dialogue[DialogueIndex];
+		return null;
 	}
 
 	protected void RunDialogueActions(List<string> choices)

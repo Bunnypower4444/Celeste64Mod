@@ -25,6 +25,8 @@ public class Signpost : NPC, IHaveModels
 	private CoEnumerator Talk(Cutscene cs)
 	{
 		yield return Co.Run(cs.Face(World.Get<Player>(), Position));
-		yield return Co.Run(cs.Say(Dialogue[DialogueIndex] ?? throw new Exception("Null dialogue")));
+		List<string> choices = [];
+		yield return Co.Run(cs.Say(GetCurrentLine() ?? throw new Exception("Null dialogue"), choices));
+		RunDialogueActions(choices);
 	}
 }

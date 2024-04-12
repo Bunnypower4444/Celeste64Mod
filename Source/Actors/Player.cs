@@ -995,7 +995,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		if (onGround)
 		{
 			foreach (var actor in World.All<NPC>())
-				if (actor is NPC npc && npc.InteractEnabled)
+				if (actor is NPC npc && npc.CheckForDialog() && npc.InteractEnabled)
 				{
 					if ((Position - npc.Position).LengthSquared() < npc.InteractRadius * npc.InteractRadius &&
 						Vec2.Dot((npc.Position - Position).XY(), targetFacing) > 0 &&

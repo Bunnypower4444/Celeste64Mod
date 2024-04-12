@@ -24,7 +24,7 @@ public class Granny : NPC
 
 		//int index = Save.CurrentRecord.GetFlag(TALK_FLAG) + 1;
 		//yield return Co.Run(cs.Say(Loc.Lines($"Baddy{index}")));
-		var lines = Dialogue[Save.CurrentRecord.GetFlag(TALK_FLAG)] ?? throw new Exception("Null dialogue");
+		var lines = GetCurrentLine() ?? throw new Exception("Null dialogue");
         List<string> choices = [];
         yield return Co.Run(cs.Say(lines, choices));
 		//Save.CurrentRecord.IncFlag(TALK_FLAG);
