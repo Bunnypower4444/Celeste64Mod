@@ -1,7 +1,15 @@
-# Celeste 64: Fragments of the Mountain
-This is the source code and general information for *Celeste 64: Fragments of the Mountain*, a game made by the original Celeste developers in under 2 weeks for Celeste's 6th Anniversary. We haven't done a lot of 3D development so much of this is not very optimized, it's coded in libraries mostly intended for 2D games, and we put it all together very, very quickly. Consider this similar to a weekend jam game, so experiment and learn at your own risk!  
+# Celeste 64: FitnessGram Pacer Test
+This is the source code for the Celeste 64 FitnessGram Pacer Test, a mod for *Celeste 64: Fragments of the Mountain*. This mod adds the FitnessGram Pacer Test as a fun challenge. This was my first time modding a game, enjoy!
 
-You can find prebuilt version of the game on [itch.io](https://maddymakesgamesinc.itch.io/celeste64).
+A pre-built version will be available soon.
+
+### Pacer Test Instructions
+ - Go to the ending area. You will see a new path leading upwards.
+ - Once you reach the top, interact with the sign. This will start the test.
+ - Try to get as far as you can before making two mistakes.
+ - Note: Your dash will not refill on the ground (hehe)
+ - Dying counts as a mistake and will send you to the other side.
+ - After reaching a score of 15, 25, and 50, you will be rewarded with a strawberry.
 
 ### Installation
  - You need [.NET 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
