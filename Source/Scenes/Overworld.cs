@@ -1,7 +1,4 @@
 
-using System.Security.Cryptography.X509Certificates;
-using FMOD;
-
 namespace Celeste64;
 
 public class Overworld : Scene

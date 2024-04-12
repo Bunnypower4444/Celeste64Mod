@@ -55,7 +55,7 @@ public static class WorldSetup
             // Badeline
             if (world.Get<Badeline>() is {} badeline) {
                 badeline.SetDialogue(GetDialogueLines(BADELINE_DIALOG_KEYS_1));
-                badeline.DialogueFinishActions.Add(bad => {
+                badeline.DialogueFinishActions.Add((bad, choices) => {
                     bad.DialogueIndex++;
                     Save.CurrentRecord.IncFlag(Badeline.TALK_FLAG);
                 });
@@ -65,7 +65,7 @@ public static class WorldSetup
             // Theo
             if (world.Get<Theo>() is {} theo) {
                 theo.SetDialogue(GetDialogueLines(THEO_DIALOG_KEYS_1));
-                theo.DialogueFinishActions.Add(th => {
+                theo.DialogueFinishActions.Add((th, _) => {
                     th.DialogueIndex++;
                     Save.CurrentRecord.IncFlag(Theo.TALK_FLAG);
                 });
@@ -75,7 +75,7 @@ public static class WorldSetup
             // Granny
             if (world.Get<Granny>() is {} granny) {
                 granny.SetDialogue(GetDialogueLines(GRANNY_DIALOG_KEYS_1));
-                granny.DialogueFinishActions.Add(gr => {
+                granny.DialogueFinishActions.Add((gr, _) => {
                     gr.DialogueIndex++;
                     Save.CurrentRecord.IncFlag(Granny.TALK_FLAG);
                 });

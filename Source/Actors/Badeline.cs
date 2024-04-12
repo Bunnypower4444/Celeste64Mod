@@ -69,9 +69,10 @@ public class Badeline : NPC
 		//int index = Save.CurrentRecord.GetFlag(TALK_FLAG) + 1;
 		//yield return Co.Run(cs.Say(Loc.Lines($"Baddy{index}")));
 		var lines = Dialogue[DialogueIndex] ?? throw new Exception("Null dialogue");
-        yield return Co.Run(cs.Say(lines));
+		List<string> choices = [];
+        yield return Co.Run(cs.Say(lines, choices));
 		//Save.CurrentRecord.IncFlag(TALK_FLAG);
-		RunDialogueActions();
+		RunDialogueActions(choices);
 	}
 
     public override void CollectModels(List<(Actor Actor, Model Model)> populate)

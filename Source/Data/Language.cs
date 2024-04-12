@@ -9,7 +9,7 @@ public class Language
 	private static readonly Language EmptyLanguage = new() { Font = "Renogare" };
 	private static readonly List<Line> EmptyLines = [];
 
-	public record struct Line(string Face, string Text, string Voice);
+	public record struct Line(string Face, string Text, string Voice, string? ID = null, string[]? Choices = null, bool EndDialogue = false);
 
 	public string ID { get; set; } = string.Empty;
 	public string Label { get; set; } = string.Empty;

@@ -9,9 +9,12 @@ public class Cutscene : Actor, IHaveUI
 	public readonly Func<Cutscene, CoEnumerator> Running;
 	public readonly Routine Routine;
 	private float ease = 0.0f;
+	private float choiceEase = 0.0f;
 
 	private const float CharacterEaseInTime = 0.4f;
 	private const float CharacterOffset = 1.0f / 40;
+	private const float ChoiceEaseInTime = 0.5f;
+	private const float ChoiceEaseOffset = 0.1f;
 
 	// TODO add a table for colors so you can put the name of the color in the dialogue
 
@@ -26,11 +29,16 @@ public class Cutscene : Actor, IHaveUI
 		public XmlDocument Document;
 		public bool Talking;
 		public float Delay;
+		public string[] Choices;
 	}
 	private Saying saying;
 	private AudioHandle dialogSnapshot;
 	private float timer = 0;
 	private readonly Random random = new();
+	private List<Language.Line>? currentLines;
+	private int selectedChoice = 0;
+	private int pSelectedChoice = 0;
+	private float selectedChoiceEase = 0;
 
 	public bool FreezeGame = false;
 
@@ -41,6 +49,8 @@ public class Cutscene : Actor, IHaveUI
 		FreezeGame = freezeEverythingExceptMe;
 		UpdateOffScreen = true;
 	}
+
+	#region Dialogue Parsing
 
 	// Left angled bracket (<)
 	private const string LeftTag = "left";
@@ -179,23 +189,39 @@ public class Cutscene : Actor, IHaveUI
 		*/
 	}
 
+	#endregion
+
     public override void Destroyed()
     {
 		Audio.StopBus(Sfx.bus_dialog, false);
 		dialogSnapshot.Stop();
     }
 
-    public CoEnumerator Say(List<Language.Line> lines)
+	#region Dialogue
+
+	// Pass a list into choices parameter to get a list of choices the user makes
+    public CoEnumerator Say(List<Language.Line> lines, List<string>? choices = null)
 	{
-		foreach (var line in lines)
-		{
-			yield return Co.Run(Say(line.Face, line.Text, line.Voice));
+		currentLines = lines;
+		var i = 0;
+		while (i < lines.Count) {
+			var line = lines[i];
+			yield return Co.Run(Say(line.Face, line.Text, line.Voice, line.Choices));
+			if (line.Choices != null && line.Choices.Length > 0)
+			{
+				i = currentLines.FindIndex(l => l.ID == line.Choices[pSelectedChoice]);
+				choices?.Add(line.Choices[pSelectedChoice]);
+				if (i < 0) break;
+			}
+			else if (line.EndDialogue)
+				break;
+			else i++;
 		}
 
 		Audio.StopBus(Sfx.bus_dialog, false);
 	}
 
-	public CoEnumerator Say(string face, string line, string? voice = null)
+	public CoEnumerator Say(string face, string line, string? voice = null, string[]? choices = null)
 	{
 		var doc = ParseDialogue(line, out var text, out var delays);
 		saying = new Saying() {
@@ -203,7 +229,8 @@ public class Cutscene : Actor, IHaveUI
 			Text = text,
 			Talking = false,
 			Delays = delays,
-			Document = doc
+			Document = doc,
+			Choices = choices ?? []
 		};
 		float totalTime = (saying.Text.Length - 1) * CharacterOffset + CharacterEaseInTime;
 		if (delays.Count > 0)
@@ -239,6 +266,13 @@ public class Cutscene : Actor, IHaveUI
 			var wasDelay = saying.Delay > 0;
 			while (saying.Delay > 0)
 			{
+				if (Controls.Confirm.Pressed || Controls.Cancel.Pressed)
+				{
+					saying.Characters = saying.Text.Length;
+					saying.Time = totalTime;
+					yield return Co.SingleFrame;
+					goto End;
+				}
 				saying.Delay -= Time.Delta;
 				yield return Co.SingleFrame;
 				saying.Time += Time.Delta;
@@ -277,10 +311,44 @@ public class Cutscene : Actor, IHaveUI
 			yield return Co.SingleFrame;
 		}
 
+		End:
 		// wait for confirm
 		saying.Talking = false;
-		while (!Controls.Confirm.Pressed && !Controls.Cancel.Pressed)
-			yield return Co.SingleFrame;
+
+		// Ease in choices and do choice selection
+		if (saying.Choices.Length > 0)
+		{
+			while (true)
+			{
+				choiceEase += Time.Delta;
+				Calc.Approach(ref selectedChoiceEase, 1, Time.Delta * 3);
+				if (Controls.Confirm.Pressed || Controls.Cancel.Pressed)
+				{
+					choiceEase = (saying.Choices.Length - 1) * ChoiceEaseOffset + ChoiceEaseInTime;
+					yield return Co.SingleFrame;
+					break;
+				}
+				else if (Controls.Menu.Vertical.Negative.Pressed)
+				{
+					selectedChoice--;
+					if (selectedChoice < 0) selectedChoice = saying.Choices.Length - 1;
+					selectedChoiceEase = 0;
+				}
+				else if (Controls.Menu.Vertical.Positive.Pressed)
+				{
+					selectedChoice++;
+					if (selectedChoice >= saying.Choices.Length) selectedChoice = 0;
+					selectedChoiceEase = 0;
+				}
+
+				yield return Co.SingleFrame;
+			}
+		}
+		else
+		{
+			while (!Controls.Confirm.Pressed && !Controls.Cancel.Pressed)
+				yield return Co.SingleFrame;
+		}
 		Audio.Play(Sfx.ui_dialog_advance);
 
 		// ease out
@@ -292,7 +360,14 @@ public class Cutscene : Actor, IHaveUI
 		
 		dialogSnapshot.Stop();
 		saying = new();
+		pSelectedChoice = selectedChoice;
+		selectedChoice = 0;
+		choiceEase = 0;
 	}
+
+	#endregion
+
+	#region Various Methods
 
 	public CoEnumerator MoveToDistance(Actor? actor, Vec2 position, float distance)
 	{
@@ -361,6 +436,8 @@ public class Cutscene : Actor, IHaveUI
 		yield return Co.Continue;
 	}
 
+	#endregion
+
 	private CoEnumerator PerformCutscene()
 	{
 		Audio.Play(Sfx.sfx_readsign_in);
@@ -396,6 +473,8 @@ public class Cutscene : Actor, IHaveUI
 			World.Destroy(this);
 	}
 
+	#region Rendering
+
 	public void RenderUI(Batcher batch, Rect bounds)
 	{
 		const float BarSize = 40 * Game.RelativeScale;
@@ -407,7 +486,7 @@ public class Cutscene : Actor, IHaveUI
 		batch.Rect(new Rect(bounds.X, bounds.Y, bounds.Width, BarSize * ease), Color.Black);
 		batch.Rect(new Rect(bounds.X, bounds.Bottom - BarSize * ease, bounds.Width, BarSize * ease), Color.Black);
 
-		if (saying.Ease > 0 && !string.IsNullOrEmpty(saying.Text) && !World.Paused)
+		if (saying.Ease > 0 && (!string.IsNullOrEmpty(saying.Text) || (saying.Choices.Length > 0 && currentLines != null)) && !World.Paused)
 		{
 			var ease = Ease.Cube.Out(saying.Ease);
 			var font = Language.Current.SpriteFont;
@@ -416,7 +495,7 @@ public class Cutscene : Actor, IHaveUI
 
 			Texture? face = null;
 
-			// try to find taling face
+			// try to find talking face
 			if (!string.IsNullOrEmpty(saying.Face))
 			{
 				var oddFrame = Time.BetweenInterval(timer, 0.3f, 0);
@@ -453,6 +532,11 @@ public class Cutscene : Actor, IHaveUI
 
 			if (face != null)
 				pos.X += PortraitSize / 3;
+			
+			
+			if (saying.Choices.Length > 0)
+				pos.X = MathF.Min(pos.X, bounds.Width / 3 - 2 * Padding);
+			if (string.IsNullOrEmpty(saying.Text)) goto RenderChoices;
 
 			var box = new Rect(pos.X, pos.Y, size.X + Padding * 2, size.Y + Padding * 2);
 			batch.RectRounded(box + new Vec2(0, 1), 4, Color.Black);
@@ -465,12 +549,17 @@ public class Cutscene : Actor, IHaveUI
 			}
 
             // Draw the letters
-            RenderText(batch, font, pos + new Vec2(Padding, Padding), saying);
+            RenderText(batch, pos + new Vec2(Padding, Padding), saying);
+			pos.Y = box.Bottom + Padding;
+
+			RenderChoices:
+			if (saying.Choices.Length > 0) RenderChoices(batch, pos, saying.Choices);
 		}
 	}
 
-	private void RenderText(Batcher batch, SpriteFont font, Vec2 pos, Saying saying)
+	private void RenderText(Batcher batch, Vec2 pos, Saying saying)
 	{
+		var font = Language.Current.SpriteFont;
 		var origX = pos.X;
 		var i = 0;
 		var timeOffset = 0f;
@@ -584,4 +673,108 @@ public class Cutscene : Actor, IHaveUI
 		*/
 		// batch.Text(font, saying.Text.AsSpan(0, saying.Characters), pos + new Vec2(Padding, Padding), Color.Black);
 	}
+
+	private void RenderChoices(Batcher batch, Vec2 pos, string[] choices)
+	{
+		const float ChoiceHeight = 45 * Game.RelativeScale;
+		const float Padding = 12 * Game.RelativeScale;
+		if (currentLines == null) return;
+		int i = 0;
+		foreach(var choice in choices)
+		{
+			if (currentLines.Find(line => line.ID == choice) is {} line)
+			{
+				var doc = ParseDialogue(line.Text, out var text, out _);
+				RenderChoice(batch, pos, new() {
+					Face = $"faces/{line.Face}",
+					Text = text,
+					Characters = text.Length,
+					Time = (text.Length - 1) * CharacterOffset + CharacterEaseInTime,
+					Document = doc,
+					Talking = false,
+					Ease = Calc.Clamp((choiceEase - i * ChoiceEaseOffset) / ChoiceEaseInTime),
+					Delays = []
+				}, i == selectedChoice);
+			}
+			i++;
+			pos += new Vec2(0, ChoiceHeight + Padding);
+		}
+	}
+	private void RenderChoice(Batcher batch, Vec2 pos, Saying saying, bool selected)
+	{
+		const float PortraitSize = 64 * Game.RelativeScale;
+		const float EaseOffset = 32 * Game.RelativeScale;
+		const float SelectedEaseOffset = 24 * Game.RelativeScale;
+		const float Padding = 4 * Game.RelativeScale;
+		const float ChoiceWidth = 320 * Game.RelativeScale;
+		const float ChoiceHeight = 45 * Game.RelativeScale;
+
+		if (saying.Ease > 0 && !string.IsNullOrEmpty(saying.Text) && !World.Paused)
+		{
+			var ease = Ease.Cube.Out(saying.Ease);
+			pos += new Vec2(-EaseOffset * (1 - ease), 0);
+
+			var selectedEase = Ease.Cube.Out(selectedChoiceEase);
+			if (selected)
+				pos += new Vec2(SelectedEaseOffset * selectedEase, 0);
+
+			Texture? face = null;
+
+			// try to find talking face
+			if (!string.IsNullOrEmpty(saying.Face))
+			{
+				var oddFrame = Time.BetweenInterval(timer, 0.3f, 0);
+				var src = saying.Face;
+				if (saying.Talking && Assets.Textures.ContainsKey($"{src}Talk00"))
+				{
+					if (oddFrame && Assets.Textures.ContainsKey($"{src}Talk01"))
+						face = Assets.Textures[$"{src}Talk01"];
+					else
+						face = Assets.Textures[$"{src}Talk00"];
+				}
+				else if (!saying.Talking && Assets.Textures.ContainsKey($"{src}Idle00"))
+				{
+					// idle is blinking so hold on first frame for a long time, then 2nd frame for less time
+					oddFrame = (timer % 3) > 2.8f;
+					if (oddFrame && Assets.Textures.ContainsKey($"{src}Idle01"))
+						face = Assets.Textures[$"{src}Idle01"];
+					else
+						face = Assets.Textures[$"{src}Idle00"];
+				}
+				else if (oddFrame && Assets.Textures.ContainsKey($"{src}01"))
+				{
+					face = Assets.Textures[$"{src}01"];
+				}
+				else if (Assets.Textures.ContainsKey($"{src}00"))
+				{
+					face = Assets.Textures[$"{src}00"];
+				}
+				else
+				{
+					face = Assets.Textures.GetValueOrDefault(src);
+				}
+			}
+
+			var boxPos = pos;
+			if (face != null)
+				pos.X += PortraitSize / 3;
+
+			var box = new Rect(boxPos.X, boxPos.Y, ChoiceWidth + Padding * 2, ChoiceHeight + Padding * 2);
+			batch.RectRounded(box + new Vec2(0, 1), 4, Color.Black * ease);
+			batch.RectRounded(box, 4, selected ? Color.Lerp(Color.White, Color.LightGray, selectedEase) : Color.White * ease);
+
+			if (face != null)
+			{
+				var faceBox = new Rect(pos.X - PortraitSize * 0.8f, pos.Y + box.Height / 2 - PortraitSize / 2 - 10, PortraitSize, PortraitSize);
+				batch.ImageFit(new Subtexture(face), faceBox, Vec2.One * 0.5f, Color.White, false, false);
+			}
+
+            // Draw the letters
+			batch.PushMatrix(Matrix3x2.CreateScale(0.85f) * Matrix3x2.CreateTranslation(pos + new Vec2(Padding, Padding)));
+            RenderText(batch, Vec2.Zero, saying);
+			batch.PopMatrix();
+		}
+	}
+
+	#endregion
 }

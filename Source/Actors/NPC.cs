@@ -23,7 +23,7 @@ public abstract class NPC : Actor, IHaveModels, IHaveSprites, IHavePushout, ICas
 		CheckForDialog();
 	}}
 	public List<Language.Line>?[] Dialogue { get; private set; } = [];
-	public List<Action<NPC>> DialogueFinishActions { get; } = [];
+	public List<Action<NPC, List<string>>> DialogueFinishActions { get; } = [];
 
 	public void SetDialogue(List<Language.Line>?[] dialog)
 	{
@@ -37,10 +37,10 @@ public abstract class NPC : Actor, IHaveModels, IHaveSprites, IHavePushout, ICas
 		// InteractEnabled = Loc.HasLines($"Baddy{Save.CurrentRecord.GetFlag(TALK_FLAG) + 1}");
 	}
 
-	protected void RunDialogueActions()
+	protected void RunDialogueActions(List<string> choices)
 	{
 		foreach (var action in DialogueFinishActions)
-			action(this);
+			action(this, choices);
 	}
 
 	public NPC(SkinnedTemplate model)
