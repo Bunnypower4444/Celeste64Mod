@@ -7,6 +7,7 @@ namespace Celeste64;
 public class AreaTrigger(string id) : Actor
 {
     private readonly List<Action<AreaTrigger>> enterActions = [];
+    private readonly List<Action<AreaTrigger>> inTriggerActions = [];
     private readonly List<Action<AreaTrigger>> exitActions = [];
     public readonly string ID = id;
     public bool PlayerIsInTrigger => World.Get<Player>() is {} player && WorldBounds.Contains(player.Position);
@@ -22,6 +23,11 @@ public class AreaTrigger(string id) : Actor
         enterActions.Add(action);
     }
 
+    public void AddInTriggerAction(Action<AreaTrigger> action)
+    {
+        inTriggerActions.Add(action);
+    }
+
     public void AddExitAction(Action<AreaTrigger> action)
     {
         exitActions.Add(action);
@@ -35,6 +41,16 @@ public class AreaTrigger(string id) : Actor
     public bool RemoveEnterAction(Action<AreaTrigger> action)
     {
         return enterActions.Remove(action);
+    }
+
+    /// <summary>
+    /// Removes the specified in-trigger action.
+    /// </summary>
+    /// <param name="action">The action to be removed.</param>
+    /// <returns>True if the action was successfully removed; otherwise, false.</returns>
+    public bool RemoveInTriggerAction(Action<AreaTrigger> action)
+    {
+        return inTriggerActions.Remove(action);
     }
 
     /// <summary>
@@ -55,6 +71,14 @@ public class AreaTrigger(string id) : Actor
         }
     }
 
+    public void RunInTriggerActions()
+    {
+        foreach (var action in inTriggerActions)
+        {
+            action(this);
+        }
+    }
+
     public void RunExitActions()
     {
         foreach (var action in exitActions)
@@ -67,7 +91,11 @@ public class AreaTrigger(string id) : Actor
     {
         base.Update();
         var inTrigger = PlayerIsInTrigger;
-        if (inTrigger && !PlayerWasInTrigger) RunEnterActions();
+        if (inTrigger)
+        {
+            if (!PlayerWasInTrigger) RunEnterActions();
+            RunInTriggerActions();
+        }
         else if (!inTrigger && PlayerWasInTrigger) RunExitActions();
 
         PlayerWasInTrigger = inTrigger;

@@ -42,7 +42,7 @@ public static class WorldSetup
         // Ending area music
         {
             var endingArea = world.Get<EndingArea>();
-            endingArea?.AddEnterAction(_ => {
+            endingArea?.AddInTriggerAction(_ => {
                 Game.Instance.Music.Set("at_baddy", 1);
             });
             endingArea?.AddExitAction(_ => {
@@ -93,7 +93,7 @@ public static class WorldSetup
                             // Finished with all dialogue (commenting out since i didn't make the new level yet)
                             // bad.DialogueIndex = 4;
                             // Save.CurrentRecord.SetFlag(Badeline.TALK_FLAG, 4);
-                            // return;
+                            return;
                         }
                     }
 
