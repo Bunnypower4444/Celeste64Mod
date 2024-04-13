@@ -11,6 +11,7 @@ public class Actor
 	private BoundingBox localBounds;
 	private BoundingBox worldBounds;
 	private bool dirty = true;
+	public bool Visible = true;
 
 	/// <summary>
 	/// Optional GroupName, used by Strawberries to check what unlocks them. Can

@@ -8,6 +8,8 @@ public class Badeline : NPC
 	private readonly Hair hair;
 	private Color hairColor = 0x9B3FB5;
 
+	private Routine routine = new();
+
     public Badeline() : base(Assets.Models["badeline"])
 	{
 		Model.Play("Bad.Idle");
@@ -54,6 +56,7 @@ public class Badeline : NPC
 			hair.Update(hairMatrix);
 		}
 		
+		routine.Update();
     }
 
     public override void Interact(Player player)
@@ -80,5 +83,43 @@ public class Badeline : NPC
 		populate.Add((this, hair));
         base.CollectModels(populate);
     }
+
+	public void FuseWithMadeline()
+	{
+		var player = World.Get<Player>();
+		if (player == null) return;
+
+		routine.Run(FuseWithMadelineRoutine(player));
+	}
+
+	private CoEnumerator FuseWithMadelineRoutine(Player player)
+	{
+		float time = 0f;
+		const float MoveTime = 1f;
+		var origPos = Position;
+		var origFacing = Facing;
+
+		PushoutRadius = 0;
+
+		while (time < MoveTime)
+		{
+			time += Time.Delta;
+			var ease = Ease.Cube.InOut(time / MoveTime);
+			Position = Vec3.Lerp(origPos, player.Position, ease);
+			Facing = Vec2.Transform(origFacing, Matrix3x2.CreateRotation((player.Facing.Angle() - origFacing.Angle()) * ease));
+			yield return Co.SingleFrame;
+		}
+
+		Visible = false;
+		// create cool effect
+		var refill = new Refill(true) { Visible = false, Position = player.Position };
+		World.Add(refill);
+		yield return Co.SingleFrame;
+		refill.Pickup(player);
+		player.Settings = player.Settings with { MaxDashes = 2 };
+
+		yield return 0.4f;
+		World.Destroy(refill);
+	}
 }
 

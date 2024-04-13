@@ -31,6 +31,11 @@ public class Save
 		/// </summary>
 		public HashSet<string> StartedSubMaps { get; set; } = [];
 		public Dictionary<string, int> Flags { get; set; } = []; 
+		/// <summary>
+		/// Stores miscellaneous variables for the current level that shouldn't be saved
+		/// </summary>
+		[JsonIgnore]
+		public Dictionary<string, int> TemporaryFlags { get; private set; } = [];
 		public int Deaths { get; set; } = 0;
 		public TimeSpan Time { get; set; } = new();
 
@@ -40,8 +45,19 @@ public class Save
 		public int SetFlag(string name, int value = 1) 
 			=> Flags[name] = value;
 
+		public int IncTempFlag(string name) 
+			=> TemporaryFlags[name] = GetTempFlag(name) + 1;
+
+		public int GetTempFlag(string name, int defaultValue = 0) 
+			=> TemporaryFlags.TryGetValue(name, out int value) ? value : defaultValue;
+
+		public int SetTempFlag(string name, int value = 1) 
+			=> TemporaryFlags[name] = value;
+
 		public int IncFlag(string name) 
-			=> Flags[name] = GetFlag(name) + 1;
+			=> TemporaryFlags[name] = GetFlag(name) + 1;
+
+		public void ClearTempFlags() => TemporaryFlags = [];
 	}
 
 	public static Save Instance = new();

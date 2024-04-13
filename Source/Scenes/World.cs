@@ -98,15 +98,18 @@ public class World : Scene
 				Get<Player>()?.Kill();
 			}));
 			pauseMenu.Add(new Menu.Submenu(Loc.Str("PauseOptions"), pauseMenu, optionsMenu));
-			pauseMenu.Add(new Menu.Option(Loc.Str("PauseSaveQuit"), () => Game.Instance.Goto(new Transition()
-			{
-				Mode = Transition.Modes.Replace,
-				Scene = () => new Overworld(true),
-				FromPause = true,
-				ToPause = true,
-				ToBlack = new SlideWipe(),
-				Saving = true
-			})));
+			pauseMenu.Add(new Menu.Option(Loc.Str("PauseSaveQuit"), () => {
+				Game.Instance.Goto(new Transition()
+				{
+					Mode = Transition.Modes.Replace,
+					Scene = () => new Overworld(true),
+					FromPause = true,
+					ToPause = true,
+					ToBlack = new SlideWipe(),
+					Saving = true
+				});
+				Save.CurrentRecord.ClearTempFlags();
+			}));
 		}
 
 		// environment
@@ -660,7 +663,7 @@ public class World : Scene
 			foreach (var actor in All<ICastPointShadow>())
 			{
 				var alpha = (actor as ICastPointShadow)!.PointShadowAlpha;
-				if (alpha > 0 && 
+				if (alpha > 0 && actor.Visible &&
 					Camera.Frustum.Contains(actor.WorldBounds.Conflate(actor.WorldBounds - Vec3.UnitZ * 1000)))
 					sprites.Add(Sprite.CreateShadowSprite(this, actor.Position + Vec3.UnitZ, alpha));
 			}
@@ -672,7 +675,8 @@ public class World : Scene
 					continue;
 
 				(actor as IHaveSprites)?.CollectSprites(sprites);
-				(actor as IHaveModels)?.CollectModels(models);
+				if (actor is IHaveModels haveModels && actor.Visible)
+					haveModels.CollectModels(models);
 			}
 
 			// sort models by distance (for transparency)
