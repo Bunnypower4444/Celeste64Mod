@@ -1,12 +1,15 @@
 
+using System.Text.RegularExpressions;
+
 namespace Celeste64;
 
 /// <summary>
 /// Sets up stuff for each individual level (so that other classes don't have level-specific things in them), like cutscenes
 /// </summary>
-public static class WorldSetup
+public static partial class WorldSetup
 {
     public const string FORSAKEN_CITY = "1";
+    public const string FORSAKEN_CITY_BSIDE_REGEX = "^1-\\d+$";
 
     public static void Setup(World world)
     {
@@ -15,7 +18,15 @@ public static class WorldSetup
             case FORSAKEN_CITY:
                 SetupForsakenCity(world);
                 break;
+            default:
+                goto NoMatch;
         }
+        return;
+
+        NoMatch:
+        // B-sides
+        if (ForsakenCityBSideRegex().IsMatch(world.Entry.Map))
+            SetupForsakenCityBSide(world);
     }
 
     private static List<Language.Line>?[] GetDialogueLines(string?[] keys)
@@ -135,6 +146,22 @@ public static class WorldSetup
             }
         }
     }
+
+    #endregion
+
+    #region 1B - Forsaken City B-Sides
+    
+    private static void SetupForsakenCityBSide(World world)
+    {
+        // Player settings
+        if (world.Get<Player>() is {} player)
+        {
+            player.Settings = new(1, true, true, false);
+        }
+    }
+
+    [GeneratedRegex(FORSAKEN_CITY_BSIDE_REGEX)]
+    private static partial Regex ForsakenCityBSideRegex();
 
     #endregion
 }
