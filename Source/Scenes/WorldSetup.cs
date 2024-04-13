@@ -39,6 +39,12 @@ public static class WorldSetup
     
     private static void SetupForsakenCity(World world)
     {
+        // Player settings
+        if (world.Get<Player>() is {} player)
+        {
+            player.Settings = new(1, true, true, false);
+        }
+
         // Ending area music
         {
             var endingArea = world.Get<EndingArea>();

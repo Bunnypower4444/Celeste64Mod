@@ -73,7 +73,7 @@ public class Refill : Actor, IHaveSprites, IPickup, IHaveModels, ICastPointShado
 
 	public void Pickup(Player player)
 	{
-		int count = IsDouble ? 2 : 1;
+		int count = IsDouble ? 2 : player.MaxDashes;
 		if (tCooldown <= 0 && player.Dashes < count)
 		{
 			UpdateOffScreen = true;

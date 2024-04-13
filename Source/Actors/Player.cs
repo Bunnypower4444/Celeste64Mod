@@ -107,6 +107,8 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		}
 	}
 
+	public record struct PlayerSettings(int MaxDashes = 1, bool RefillDashOnGround = true, bool CanDash = true, bool CanVerticalDash = true);
+
 	#endregion
 
 	// used between respawns
@@ -115,6 +117,12 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 	private enum States { Normal, Dashing, Skidding, Climbing, StrawbGet, FeatherStart, Feather, Respawn, Dead, StrawbReveal, Cutscene, Bubble, Cassette, DebugFlying };
 	private enum Events { Land };
+
+	private PlayerSettings settings;
+	public PlayerSettings Settings { get => settings; set {
+		settings = value;
+		dashes = settings.MaxDashes;
+	}}
 
 	public bool Dead = false;
 
@@ -233,6 +241,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		};
 
 		SetHairColor(0xdb2c00);
+		Settings = new(1, true, true, true);
 	}
 
 	#region Added / Update
@@ -432,7 +441,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 				groundNormal = normal;
 				tCoyote = CoyoteTime;
 				coyoteZ = Position.Z;
-				if (tDashResetCooldown <= 0)
+				if (tDashResetCooldown <= 0 && Settings.RefillDashOnGround)
 					RefillDash();
 			}
 			else
@@ -817,7 +826,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		tHoldJump = DashJumpHoldTime;
 		tCoyote = 0;
 		autoJump = false;
-		dashes = 1;
+		if (Settings.RefillDashOnGround) RefillDash();
 
 		if (DashJumpXYBoost != 0)
 		{
@@ -959,7 +968,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		Calc.Approach(ref velXY, Vec2.Zero, 30);
 		velocity = velocity.WithXY(velXY);
 
-		dashes = Math.Max(dashes, 1);
+		if (Settings.RefillDashOnGround) RefillDash();
 		CancelGroundSnap();
 	}
 
@@ -1243,6 +1252,8 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 	public int Dashes => dashes;
 	private int dashes = 1;
+	// If there is something like assist mode in the future, account for that here
+	public int MaxDashes => Settings.MaxDashes;
 	private float tDash;
 	private float tDashCooldown;
 	private float tDashResetCooldown;
@@ -1253,7 +1264,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 	private bool TryDash()
 	{
-		if (dashes > 0 && tDashCooldown <= 0 && Controls.Dash.ConsumePress())
+		if (Settings.CanDash && dashes > 0 && tDashCooldown <= 0 && Controls.Dash.ConsumePress())
 		{
 			dashes--;
 			stateMachine.State = States.Dashing;
@@ -1350,11 +1361,12 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		trail.Color = lastDashHairColor;
 	}
 
-	public bool RefillDash(int amount = 1)
+	public bool RefillDash(int? amount = null)
 	{
+		amount ??= MaxDashes;
 		if (dashes < amount)
 		{
-			dashes = amount;
+			dashes = (int)amount;
 			tDashResetFlash = .05f;
 			return true;
 		}
@@ -1364,7 +1376,16 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 	private void SetDashSpeed(in Vec2 dir)
 	{
-		if (dashedOnGround)
+		// Vertical dashing
+		if (Controls.Climb.Down && Settings.CanVerticalDash)
+		{
+			if (RelativeMoveInput != Vec2.Zero)
+				velocity = new Vec3(dir, 1).Normalized() * DashSpeed;
+			else
+				velocity = Vec3.UnitZ * DashSpeed;
+			CancelGroundSnap();
+		}
+		else if (dashedOnGround)
 			velocity = new Vec3(dir, 0) * DashSpeed;
 		else
 			velocity = new Vec3(dir, .4f).Normalized() * DashSpeed;
@@ -1800,7 +1821,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		{
 			stateMachine.State = States.FeatherStart;
 			featherZ = feather.Position.Z - 2;
-			dashes = Math.Max(dashes, 1);
+			RefillDash();
 			Audio.Play(Sfx.sfx_feather_get, Position);
 		}
 	}
