@@ -16,6 +16,16 @@ public class World : Scene
 	public readonly GridPartition<Solid> SolidGrid = new(200, 100);
 	public float GeneralTimer = 0;
 	public float DeathPlane = -100;
+	private Vec3 wind = Vec3.Zero;
+	public Vec3 Wind { get => wind; set {
+		if (wind != value)
+		{
+			// Add wind to snow direction
+			if (Get<Snow>() is {} snow)
+				snow.Direction += value - wind;
+			wind = value;
+		}
+	}}
 
 	public readonly List<Actor> Actors = [];
 	private readonly List<Actor> adding = [];

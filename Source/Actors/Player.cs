@@ -12,6 +12,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private const float PastMaxDeccel = 60;
 	private const float AirAccelMultMin = .5f;
 	private const float AirAccelMultMax = 1f;
+	private const float GroundWindVelocityFactor = .5f;
 	private const float MaxSpeed = 64;
 	private const float RotateThreshold = MaxSpeed * .2f;
 	private const float RotateSpeed = MathF.Tau * 1.5f;
@@ -161,6 +162,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private bool drawHair = true;
 	private bool drawOrbs = false;
 	private float drawOrbsEase = 0;
+	private float windHairTimer = 0;
 
 	private readonly List<Trail> trails = [];
 	private readonly Func<SpikeBlock, bool> spikeBlockCheck;
@@ -348,6 +350,11 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 				tGroundSnapCooldown -= Time.Delta;
 			if (tClimbCooldown > 0)
 				tClimbCooldown -= Time.Delta;
+
+			if (World.Wind != Vec3.Zero)
+				windHairTimer += Time.Delta;
+			else
+				windHairTimer = 0;
 		}
 
 		previousVelocity = velocity;
@@ -378,6 +385,18 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			}
 
 			// handle actual movement
+			if (stateMachine.State == States.Normal)
+			{
+				// only include wind when moving the player, and exclude wind afterward so it doesn't
+				// affect other things like skidding and animations
+				var wind = World.Wind;
+				if (onGround) wind *= GroundWindVelocityFactor;
+				velocity += wind;
+				var amount = velocity * Time.Delta;
+				SweepTestMove(amount, tNoMove <= 0);
+				velocity -= wind;
+			}
+			else
 			{
 				var amount = velocity * Time.Delta;
 				SweepTestMove(amount, tNoMove <= 0);
@@ -555,7 +574,14 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			Hair.Squish = ModelScale;
 			Hair.Materials[0].Effects = 0;
 			Hair.Grounded = onGround;
-			Hair.Update(hairMatrix);
+			// Move hair with wind
+			Vec3 wind = Vec3.Zero;
+			if (World.Wind != Vec3.Zero)
+			{
+				var len = World.Wind.Length();
+				wind = World.Wind.Normalized() * (len < 5 ? len : 5) + new Vec3(0, 0, MathF.Sin(windHairTimer * 4) * 0.5f);
+			}
+			Hair.Update(hairMatrix, wind);
 		}
 
 		// trails
