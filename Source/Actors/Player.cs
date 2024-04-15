@@ -201,6 +201,11 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		&& stateMachine.State != States.Cassette
 		&& stateMachine.State != States.Dead;
 
+	public bool IsAffectedByWind
+		=> stateMachine.State == States.Normal
+		|| stateMachine.State == States.Feather
+		|| stateMachine.State == States.Climbing;
+
 	public Player()
 	{
 		PointShadowAlpha = 1.0f;
@@ -385,12 +390,17 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			}
 
 			// handle actual movement
-			if (stateMachine.State == States.Normal)
+			if (IsAffectedByWind)
 			{
 				// only include wind when moving the player, and exclude wind afterward so it doesn't
 				// affect other things like skidding and animations
 				var wind = World.Wind;
-				if (onGround) wind *= GroundWindVelocityFactor;
+				if (onGround)
+					wind *= GroundWindVelocityFactor;
+
+				// only affect going up and down when climbing
+				if (stateMachine.State == States.Climbing)
+					wind = new(0, 0, wind.Z);
 				velocity += wind;
 				var amount = velocity * Time.Delta;
 				SweepTestMove(amount, tNoMove <= 0);
