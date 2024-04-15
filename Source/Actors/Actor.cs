@@ -11,6 +11,9 @@ public class Actor
 	private BoundingBox localBounds;
 	private BoundingBox worldBounds;
 	private bool dirty = true;
+	/// <summary>
+	/// If set to true, models and shadows are not drawn.
+	/// </summary>
 	public bool Visible = true;
 
 	/// <summary>

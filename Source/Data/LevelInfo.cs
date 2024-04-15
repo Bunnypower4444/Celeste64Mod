@@ -15,6 +15,7 @@ public class LevelInfo
 	public string Preview { get; set; } = string.Empty;
 	public string Map { get; set; } = string.Empty;
 	public string[]? SubmapOrder { get; set; }
+	public string CSideMap { get; set; } = string.Empty;
 
 	public void Enter(ScreenWipe? toBlack = null, float holdTime = 0)
 	{

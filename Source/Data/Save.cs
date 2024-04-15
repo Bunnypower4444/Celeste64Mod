@@ -30,6 +30,7 @@ public class Save
 		/// If a submap is completed, it will be removed from this set.
 		/// </summary>
 		public HashSet<string> StartedSubMaps { get; set; } = [];
+		public bool CSideUnlocked { get; set; } = false;
 		public Dictionary<string, int> Flags { get; set; } = []; 
 		/// <summary>
 		/// Stores miscellaneous variables for the current level that shouldn't be saved

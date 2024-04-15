@@ -6,7 +6,7 @@ namespace Celeste64;
 public class World : Scene
 {
 	public enum EntryReasons { Entered, Returned, Respawned }
-	public readonly record struct EntryInfo(string Map, string CheckPoint, bool Submap, EntryReasons Reason);
+	public readonly record struct EntryInfo(string Map, string CheckPoint, bool Submap, EntryReasons Reason, bool CSide = false);
 
 	public Camera Camera = new();
 	public Rng Rng = new(0);

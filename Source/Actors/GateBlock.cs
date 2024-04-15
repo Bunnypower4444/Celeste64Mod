@@ -1,7 +1,7 @@
 ﻿
 namespace Celeste64;
 
-public class GateBlock(Vec3 end) : Solid
+public class GateBlock(Vec3 end, string unlockGroup = "") : Solid
 {
 	public const float Acceleration = 400;
 	public const float MaxSpeed = 200;
@@ -10,6 +10,8 @@ public class GateBlock(Vec3 end) : Solid
 	public Vec3 End = end;
 	private bool opened;
 	private Sound? sfx;
+	private readonly string unlockGroup = unlockGroup;
+	private readonly List<Coin> unlockCoins = [];
 
 	private readonly Routine routine = new();
 
@@ -18,16 +20,38 @@ public class GateBlock(Vec3 end) : Solid
 		sfx = World.Add(new Sound(this, Sfx.sfx_touch_switch_gate_open_move));
 		UpdateOffScreen = true;
 		Start = Position;
+		if (unlockGroup != string.Empty)
+		{
+			foreach (var actor in World.All<Coin>())
+			{
+				if (actor.GroupName == unlockGroup)
+					unlockCoins.Add((Coin)actor);
+			}
+		}
     }
 
 	public override void Update()
 	{
 		base.Update();
 
-		if (!opened && !Coin.AnyRemaining(World))
+		if (!opened)
 		{
-			opened = true;
-			routine.Run(Sequence());
+			if (unlockGroup == string.Empty)
+			{
+				if (!Coin.AnyRemaining(World))
+				{
+					opened = true;
+					routine.Run(Sequence());
+				}
+			}
+			else
+			{
+				if (!Coin.AnyRemaining(unlockCoins))
+				{
+					opened = true;
+					routine.Run(Sequence());
+				}
+			}
 		}
 		else if (routine.IsRunning)
 		{

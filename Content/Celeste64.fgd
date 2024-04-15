@@ -106,6 +106,7 @@
 @SolidClass = GateBlock : "Opens when the player gets all the switches"
 [
    target(string) : "Target Node"
+   unlockGroup(string) : "Optional group of coins that needs to be collected"
 ]
 
 @SolidClass = MovingBlock : "Moves back and forth constantly"

@@ -54,7 +54,7 @@ public sealed class Coin : Actor, IHaveModels, IHaveSprites, IPickup, ICastPoint
 		if (!Collected)
 		{
 			Collected = true;
-			if (!AnyRemaining(World))
+			if ((!AnyRemaining(World) && GroupName == string.Empty) || (!AnyRemaining(World, GroupName) && GroupName != string.Empty))
 				Audio.Play(Sfx.sfx_touch_switch_last, Position);
 			else
 				Audio.Play(Sfx.sfx_touch_switch_any, Position);
@@ -66,6 +66,29 @@ public sealed class Coin : Actor, IHaveModels, IHaveSprites, IPickup, ICastPoint
 		foreach (var it in world.All<Coin>())
 		{
 			if (!(it as Coin)!.Collected)
+				return true;
+		}
+
+		return false;
+	}
+
+	public static bool AnyRemaining(List<Coin> coins)
+	{
+		foreach (var it in coins)
+		{
+			if (!it.Collected)
+				return true;
+		}
+
+		return false;
+	}
+
+	public static bool AnyRemaining(World world, string groupName)
+	{
+		List<Actor> list = world.All<Coin>();
+		foreach (var it in list)
+		{
+			if (it.GroupName == groupName && !(it as Coin)!.Collected)
 				return true;
 		}
 

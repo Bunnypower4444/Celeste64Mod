@@ -54,7 +54,7 @@ public class Map
 				entity.GetIntProperty("slow", 0) > 0,
 				map.FindTargetNodeFromParam(entity, "target"));
 		}) { IsSolidGeometry = true },
-		["GateBlock"] = new((map, entity) => new GateBlock(map.FindTargetNodeFromParam(entity, "target"))) { IsSolidGeometry = true },
+		["GateBlock"] = new((map, entity) => new GateBlock(map.FindTargetNodeFromParam(entity, "target"), entity.GetStringProperty("unlockGroup", string.Empty))) { IsSolidGeometry = true },
 		["TrafficBlock"] = new((map, entity) => new TrafficBlock(map.FindTargetNodeFromParam(entity, "target"))) { IsSolidGeometry = true },
 		["FallingBlock"] = new((map, entity) =>
 		{

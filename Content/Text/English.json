@@ -10,6 +10,7 @@
 		"Continue": "Continue",
 		"Checkpoints": "Checkpoints",
 		"B-Sides": "B-Sides",
+		"C-Side": "C-Side",
 		"Restart": "Restart",
 		"Start": "Start",
 		"Exit": "Exit",
@@ -610,6 +611,73 @@
 				"Text": "Not yet.",
 				"ID": "no",
 				"EndDialogue": true
+			}
+		],
+		"Baddy1C1": [
+			{
+				"Face": "baddy/UncertainA",
+				"Voice": "badeline/baddy3_02_b2",
+				"Text": "Something about this place feels off..."
+			},
+			{
+				"Face": "baddy/UncertainB",
+				"Voice": "badeline/baddy1_04_b2",
+				"Text": "Are you sure you're remebering correctly?"
+			},
+			{
+				"Face": "madeline/Upset",
+				"Text": "..."
+			},
+			{
+				"Face": "madeline/Upset",
+				"Voice": "madeline/granny2_02_m1",
+				"Text": "Come on, let's get going."
+			}
+		],
+		"BaddyBaller": [
+			{
+				"Face": "madeline/Default",
+				"Voice": "madeline/baddy1_01_m1",
+				"Text": "ball"
+			},
+			{
+				"Face": "baddy/Angry",
+				"Voice": "badeline/baddy1_09_b4",
+				"Text": "Stop <d time=\"0.5\" />posting <d time=\"0.5\" />about\n<d time=\"0.5\" /><c color=\"c51111\"><shake strength=\"2\">BALLER</shake></c>",
+				"ID": "ball"
+			},
+			{
+				"Face": "baddy/Angry",
+				"Voice": "badeline/baddy1_09_b4",
+				"Text": "I'm <wavy>tired</wavy> of seeing it"
+			},
+			{
+				"Face": "baddy/Angry",
+				"Voice": "badeline/baddy1_09_b4",
+				"Text": "All my friends on <c color=\"f542e6\">TikTok</c> send me <wavy><c color=\"c51111\">baller</c></wavy>"
+			},
+			{
+				"Face": "baddy/Angry",
+				"Voice": "badeline/baddy1_09_b4",
+				"Text": "On <c color=\"6636eb\">Discord</c> it's <shake>freaking</shake> <wavy><c color=\"c51111\">baller</c></wavy>"
+			},
+			{
+				"Face": "madeline/Default",
+				"Voice": "madeline/baddy2_09_m5",
+				"Text": "When the <wavy><c color=\"c51111\">baller</c></wavy> is <wavy><c color=\"c51111\">baller</c></wavy>",
+				"Choices": ["ball", "end", "stop"]
+			},
+			{
+				"Face": "baddy/Angry",
+				"Text": "...",
+				"ID": "end",
+				"EndDialogue": true
+			},
+			{
+				"Face": "baddy/Angry",
+				"Text": "<shake><wavy><c color=\"c51111\">Stop</c></wavy></shake>",
+				"ID": "stop",
+				"Choices": ["end", "ball"]
 			}
 		],
 

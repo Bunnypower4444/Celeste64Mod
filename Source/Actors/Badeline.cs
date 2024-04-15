@@ -56,7 +56,8 @@ public class Badeline : NPC
 			hair.Update(hairMatrix);
 		}
 		
-		routine.Update();
+		if (routine.IsRunning)
+			routine.Update();
     }
 
     public override void Interact(Player player)
