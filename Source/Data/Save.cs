@@ -46,17 +46,17 @@ public class Save
 		public int SetFlag(string name, int value = 1) 
 			=> Flags[name] = value;
 
-		public int IncTempFlag(string name) 
-			=> TemporaryFlags[name] = GetTempFlag(name) + 1;
+		public int IncFlag(string name) 
+			=> Flags[name] = GetFlag(name) + 1;
 
 		public int GetTempFlag(string name, int defaultValue = 0) 
 			=> TemporaryFlags.TryGetValue(name, out int value) ? value : defaultValue;
 
 		public int SetTempFlag(string name, int value = 1) 
 			=> TemporaryFlags[name] = value;
-
-		public int IncFlag(string name) 
-			=> TemporaryFlags[name] = GetFlag(name) + 1;
+		
+		public int IncTempFlag(string name) 
+			=> TemporaryFlags[name] = GetTempFlag(name) + 1;
 
 		public void ClearTempFlags() => TemporaryFlags = [];
 	}
