@@ -63,7 +63,7 @@ public class Map
 		["FloatyBlock"] = new((map, entity) => new FloatyBlock()) { IsSolidGeometry = true },
 		["DeathBlock"] = new((map, entity) => new DeathBlock()) { UseSolidsAsBounds = true },
 		["SpikeBlock"] = new((map, entity) => new SpikeBlock()) { UseSolidsAsBounds = true },
-		["Spring"] = new((map, entity) => new Spring()),
+		["Spring"] = new((map, entity) => new Spring(entity.GetStringProperty("direction", "up"))),
 		["Granny"] = new((map, entity) => new Granny()),
 		["Badeline"] = new((map, entity) => new Badeline()),
 		["Theo"] = new((map, entity) => new Theo()),

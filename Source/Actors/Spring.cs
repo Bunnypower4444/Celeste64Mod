@@ -7,14 +7,31 @@ public class Spring : Attacher, IHaveModels, IPickup
 
 	public float PickupRadius => 16;
 
+	public override Vec3 AttachNormal => Direction switch {
+		SpringDirection.Up => -Vec3.UnitZ,
+		SpringDirection.Side => -new Vec3(Facing, 0),
+		_ => -Vec3.UnitZ
+	};
+
 	private float tCooldown = 0;
 
-	public Spring()
+	public enum SpringDirection { Up, Side };
+
+	public SpringDirection Direction;
+
+	public Spring(string direction)
 	{
+		if (Enum.TryParse<SpringDirection>(direction, true, out var dir))
+			Direction = dir;
+		else
+			Direction = SpringDirection.Up;
+
 		Model = new SkinnedModel(Assets.Models["spring_board"]);
 		Model.Transform = Matrix.CreateScale(8.0f);
 		Model.SetLooping("Spring", false);
 		Model.Play("Idle");
+		if (Direction == SpringDirection.Side)
+			Model.Transform *= Matrix.CreateRotationX(MathF.PI / 2);
 
 		LocalBounds = new(Position + Vec3.UnitZ * 4, 16);
 	}

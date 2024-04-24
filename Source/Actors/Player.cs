@@ -989,23 +989,63 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	{
 		stateMachine.State = States.Normal;
 
-		Position = Position with { Z = Calc.Approach(Position.Z, spring.Position.Z + 3, 2) };
+		switch (spring.Direction) {
+			case Celeste64.Spring.SpringDirection.Up:
+				Position = Position with { Z = Calc.Approach(Position.Z, spring.Position.Z + 3, 2) };
 
-		var posXY = Position.XY();
-		Calc.Approach(ref posXY, spring.Position.XY(), 4);
-		Position = Position.WithXY(posXY);
+				var posXY = Position.XY();
+				Calc.Approach(ref posXY, spring.Position.XY(), 4);
+				Position = Position.WithXY(posXY);
 
-		holdJumpSpeed = velocity.Z = SpringJumpSpeed;
-		tHoldJump = SpringJumpHoldTime;
-		tCoyote = 0;
-		autoJump = true;
+				holdJumpSpeed = velocity.Z = SpringJumpSpeed;
+				tHoldJump = SpringJumpHoldTime;
+				tCoyote = 0;
+				autoJump = true;
 
-		var velXY = velocity.XY();
-		Calc.Approach(ref velXY, Vec2.Zero, 30);
-		velocity = velocity.WithXY(velXY);
+				var velXY = velocity.XY();
+				Calc.Approach(ref velXY, Vec2.Zero, 30);
+				velocity = velocity.WithXY(velXY);
 
-		if (Settings.RefillDashOnGround) RefillDash();
-		CancelGroundSnap();
+				if (Settings.RefillDashOnGround) RefillDash();
+				CancelGroundSnap();
+				break;
+
+			case Celeste64.Spring.SpringDirection.Side:
+				// Rotate the world so that the normal of the spring is now the z-axis
+				// Then, we can do the same things as we did when the spring is upright
+				var matrix = Matrix.CreateRotationZ(-spring.Facing.Angle()) * Matrix.CreateRotationY(-MathF.PI / 2);
+				var inv = Matrix.CreateRotationY(MathF.PI / 2) * Matrix.CreateRotationZ(spring.Facing.Angle());
+				
+				// Note: X is away from spring
+				var newPos = Vec3.Transform(Position, matrix);
+				var newPosXY = newPos.XY();
+				var newSpringPos = Vec3.Transform(spring.Position, matrix);
+				var newSpringXY = newSpringPos.XY();
+				newPos = newPos with { Z = Calc.Approach(newPos.Z, newSpringPos.Z + 3, 2) };
+				Calc.Approach(ref newPosXY, newSpringXY, 4);
+
+				Position = Vec3.Transform(new Vec3(newPosXY, newPos.Z), inv);
+
+				// Rotate it a little upwards (by 30 degrees) so the player bounces a little
+				// It doesn't make sense but regular Celeste is like this
+				var velMatrix = matrix * Matrix.CreateRotationY(MathF.PI / 6);
+				var invVelMatrix = Matrix.CreateRotationY(-MathF.PI / 6) * inv;
+				var newVel = Vec3.Transform(velocity, velMatrix)
+					with { Z = SpringJumpSpeed };
+				var newVelXY = newVel.XY();
+				Calc.Approach(ref newVelXY, Vec2.Zero, 30);
+
+				velocity = Vec3.Transform(new Vec3(newVelXY, newVel.Z), invVelMatrix);
+
+				holdJumpSpeed = SpringJumpSpeed * MathF.Sin(MathF.PI / 6);
+				tHoldJump = SpringJumpHoldTime;
+				tCoyote = 0;
+				autoJump = true;
+
+				if (Settings.RefillDashOnGround) RefillDash();
+				CancelGroundSnap();
+				break;
+		}
 	}
 
 	#endregion

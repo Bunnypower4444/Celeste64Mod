@@ -71,6 +71,7 @@ public class World : Scene
 	private int debugUpdateCount;
 	public static bool DebugDraw { get; private set; } = false;
 	public static bool ShowCoordinates { get; private set; } = false;
+	public static bool DebugMode { get; private set; } = false;
 
 	public World(EntryInfo entry)
 	{
@@ -108,6 +109,7 @@ public class World : Scene
 				Get<Player>()?.Kill();
 			}));
 			pauseMenu.Add(new Menu.Submenu(Loc.Str("PauseOptions"), pauseMenu, optionsMenu));
+			pauseMenu.Add(new Menu.Toggle(Loc.Str("PauseDebugMode"), () => DebugMode = !DebugMode, () => DebugMode));
 			pauseMenu.Add(new Menu.Option(Loc.Str("PauseSaveQuit"), () => {
 				Game.Instance.Goto(new Transition()
 				{
@@ -289,6 +291,29 @@ public class World : Scene
 
 	public override void Update()
 	{
+		// toggle debug draw
+		if (Input.Keyboard.Pressed(Keys.F1))
+			DebugDraw = !DebugDraw;
+		
+		// toggle show coordinates
+		if (Input.Keyboard.Pressed(Keys.F2))
+			ShowCoordinates = !ShowCoordinates;
+
+		if (DebugMode)
+		{
+			// start pause menu
+			if (Controls.Pause.ConsumePress())
+			{
+				SetPaused(!Paused);
+				return;
+			}
+			else if (Paused)
+				pauseMenu.Update();
+
+			// advance frame
+			if (!Input.Keyboard.Pressed(Keys.Space))
+				return;
+		}
 		debugUpdTimer.Restart();
 
 		// update audio
@@ -325,14 +350,6 @@ public class World : Scene
 				strawbCounterEase = Calc.Approach(strawbCounterEase, 0, Time.Delta * 6.0f);
 		}
 
-		// toggle debug draw
-		if (Input.Keyboard.Pressed(Keys.F1))
-			DebugDraw = !DebugDraw;
-		
-		// toggle show coordinates
-		if (Input.Keyboard.Pressed(Keys.F2))
-			ShowCoordinates = !ShowCoordinates;
-		
 		// normal game loop
 		if (!Paused)
 		{
@@ -821,11 +838,14 @@ public class World : Scene
 					at.Y += UI.IconSize + 8;
 				}
 
-				// show position if debug enabled
+				// show position & velocity if debug enabled
 				if (ShowCoordinates && Get<Player>() is Player player) {
 					batch.Text(font, $"X: {player.Position.X}", at, new Vec2(0, 0.5f), 0xffa0a0);
 					batch.Text(font, $"Y: {player.Position.Y}", at + new Vec2(0, font.LineHeight), new Vec2(0, 0.5f), 0xa0a0ff);
 					batch.Text(font, $"Z: {player.Position.Z}", at + new Vec2(0, font.LineHeight * 2), new Vec2(0, 0.5f), 0xa0ffa0);
+					batch.Text(font, $"VX: {player.Velocity.X}", at + new Vec2(0, font.LineHeight * 3), new Vec2(0, 0.5f), 0xffa0a0);
+					batch.Text(font, $"VY: {player.Velocity.Y}", at + new Vec2(0, font.LineHeight * 4), new Vec2(0, 0.5f), 0xa0a0ff);
+					batch.Text(font, $"VZ: {player.Velocity.Z}", at + new Vec2(0, font.LineHeight * 5), new Vec2(0, 0.5f), 0xa0ffa0);
 				}
 
 				// show version number when paused / in ending area

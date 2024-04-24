@@ -86,6 +86,8 @@
 
 @PointClass model({ "path": "Models/spring_board.glb", "scale": 36 }) = Spring : "Bounces you..." 
 [
+    direction(string) : "What direction the spring bounces the player" : "up" : "up or side, 0 angle is -y direction"
+    angle(integer) : "Rotation"
 ]
 
 @SolidClass = TrafficBlock : "Moves to the node when the player is riding it"

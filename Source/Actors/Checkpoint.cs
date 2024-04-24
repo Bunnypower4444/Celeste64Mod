@@ -54,9 +54,16 @@ public class Checkpoint : Actor, IHaveModels, IPickup, IHaveSprites
 			Audio.Play(Sfx.sfx_checkpoint, Position);
 
 			World.Entry = World.Entry with { CheckPoint = Name };
-			if (!World.Entry.Submap && !World.Entry.CSide) {
-				Save.CurrentRecord.Checkpoint = Name;
-                Save.CurrentRecord.ReachedCheckpoints.Add(Name);
+			if (!World.Entry.Submap) {
+				if (World.Entry.CSide)
+				{
+					Save.CurrentRecord.CSideCheckpoint = Name;
+					Save.CurrentRecord.ReachedCSideCheckpoints.Add(Name);
+				}
+				else {
+					Save.CurrentRecord.Checkpoint = Name;
+					Save.CurrentRecord.ReachedCheckpoints.Add(Name);
+				}
             }
 
 			tWiggle = 1;

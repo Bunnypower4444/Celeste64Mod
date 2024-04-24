@@ -9,6 +9,9 @@ public class AreaTrigger(string id) : Actor
     private readonly List<Action<AreaTrigger>> enterActions = [];
     private readonly List<Action<AreaTrigger>> inTriggerActions = [];
     private readonly List<Action<AreaTrigger>> exitActions = [];
+    private readonly List<Action<AreaTrigger>> removedEnterActions = [];
+    private readonly List<Action<AreaTrigger>> removedInTriggerActions = [];
+    private readonly List<Action<AreaTrigger>> removedExitActions = [];
     public readonly string ID = id;
     public bool PlayerIsInTrigger => World.Get<Player>() is {} player && WorldBounds.Contains(player.Position);
     public bool PlayerWasInTrigger { get; private set; } = false;
@@ -40,7 +43,12 @@ public class AreaTrigger(string id) : Actor
     /// <returns>True if the action was successfully removed; otherwise, false.</returns>
     public bool RemoveEnterAction(Action<AreaTrigger> action)
     {
-        return enterActions.Remove(action);
+        if (enterActions.Contains(action))
+        {
+            removedEnterActions.Add(action);
+            return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -50,7 +58,12 @@ public class AreaTrigger(string id) : Actor
     /// <returns>True if the action was successfully removed; otherwise, false.</returns>
     public bool RemoveInTriggerAction(Action<AreaTrigger> action)
     {
-        return inTriggerActions.Remove(action);
+        if (inTriggerActions.Contains(action))
+        {
+            removedInTriggerActions.Add(action);
+            return true;
+        }
+        return false;
     }
 
     /// <summary>
@@ -60,7 +73,12 @@ public class AreaTrigger(string id) : Actor
     /// <returns>True if the action was successfully removed; otherwise, false.</returns>
     public bool RemoveExitAction(Action<AreaTrigger> action)
     {
-        return exitActions.Remove(action);
+        if (exitActions.Contains(action))
+        {
+            removedExitActions.Add(action);
+            return true;
+        }
+        return false;
     }
 
     public void RunEnterActions()
@@ -99,5 +117,16 @@ public class AreaTrigger(string id) : Actor
         else if (!inTrigger && PlayerWasInTrigger) RunExitActions();
 
         PlayerWasInTrigger = inTrigger;
+
+        // Removing actions this way so an action can remove itself when it is running
+        foreach (var action in removedEnterActions)
+            enterActions.Remove(action);
+        removedEnterActions.Clear();
+        foreach (var action in removedInTriggerActions)
+            inTriggerActions.Remove(action);
+        removedInTriggerActions.Clear();
+        foreach (var action in removedExitActions)
+            exitActions.Remove(action);
+        removedExitActions.Clear();
     }
 }

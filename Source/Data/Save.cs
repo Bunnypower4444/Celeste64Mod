@@ -31,6 +31,8 @@ public class Save
 		/// </summary>
 		public HashSet<string> StartedSubMaps { get; set; } = [];
 		public bool CSideUnlocked { get; set; } = false;
+		public string CSideCheckpoint { get; set; } = string.Empty;
+		public HashSet<string> ReachedCSideCheckpoints { get; set; } = [];
 		public Dictionary<string, int> Flags { get; set; } = []; 
 		/// <summary>
 		/// Stores miscellaneous variables for the current level that shouldn't be saved

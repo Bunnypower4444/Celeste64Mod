@@ -9,7 +9,7 @@ public class Overworld : Scene
 	public class Entry
 	{
 		public enum MenuState {
-			Start, ASides, BSides, CSide
+			Start, ASides, BSides, CSides
 		}
 		public readonly LevelInfo Level;
 		public readonly Target Target;
@@ -21,7 +21,8 @@ public class Overworld : Scene
 		public readonly List<Menu>? BSides;
 		public int currentBSideMenuIndex = 0;
 		public string? SelectedSubmap;
-		public readonly Menu? CSides;
+		public readonly List<Menu>? CSides;
+		public int currentCSideMenuIndex = 0;
 		public MenuState CurrentMenuState;
 		public readonly bool Complete = false;
 
@@ -40,7 +41,7 @@ public class Overworld : Scene
 			if (Save.Instance.TryGetRecord(Level.ID) is {} record)
 			{
 				var str = Loc.Str("Continue");
-				if (record.Checkpoint != string.Empty) {
+				if (record.Checkpoint != string.Empty && record.Checkpoint != Map.StartCheckpoint) {
 					str += $" ({record.Checkpoint})";
 				}
 				Menu.Add(new Menu.Option(str));
@@ -100,13 +101,43 @@ public class Overworld : Scene
 				}
 
 				// C-Side menu
-				if (record.CSideUnlocked)
+				if (record.CSideUnlocked) 
 				{
-					CSides = new() {
-						UpSound = Sfx.main_menu_roll_up,
-						DownSound = Sfx.main_menu_roll_down
-					};
-					CSides.Add(new Menu.Option($"{Level.Name} C-Side"));
+					CSides = [];
+					int checkpointIndex = 0, checkpointCount = 0;
+					// Add 2 for "Continue" option and the Start checkpoint
+					int numCheckpoints = record.ReachedCSideCheckpoints.Count + 2;
+					for (int i = 0; i < numCheckpoints / 4.0f; i++)
+					{	
+						CSides.Add(new() {
+							UpSound = Sfx.main_menu_roll_up,
+							DownSound = Sfx.main_menu_roll_down,
+							Focused = false
+						});
+						if (i == 0) CSides[i].Focused = true;
+						var toArray = Assets.Maps[Level.CSideMap]?.Checkpoints.ToArray();
+						for ( ; checkpointCount < (i + 1) * 4 && checkpointIndex < toArray?.Length; checkpointIndex++) {
+							// Continue button
+							if (checkpointCount == 0)
+							{
+								var continueStr = Loc.Str("Continue");
+								if (record.CSideCheckpoint != string.Empty && record.CSideCheckpoint != Map.StartCheckpoint)
+									continueStr += $" ({record.CSideCheckpoint})";
+								
+								CSides[i].Add(new Menu.Option(continueStr));
+								checkpointIndex--;
+								checkpointCount++;
+								continue;
+							}
+
+							var checkpoint = toArray is not null ? toArray[checkpointIndex] : string.Empty;
+							if (record.ReachedCSideCheckpoints.Contains(checkpoint) || checkpoint == Map.StartCheckpoint)
+							{
+								CSides[i].Add(new Menu.Option(checkpoint));
+								checkpointCount++;
+							}
+						}
+					}
 				}
 			}
 			else
@@ -187,6 +218,7 @@ public class Overworld : Scene
 						else if (CSides != null)
 							UI.Prompt(batch, Controls.Left, Loc.Str("C-Sides"), bounds.BottomLeft + new Vec2(4, -UI.PromptSize - 8), out _, 0);
 						break;
+
 					case MenuState.ASides:
 						if (ASides is null) break;
 						for (int i = 0; i < ASides.Count; i++) {
@@ -204,6 +236,7 @@ public class Overworld : Scene
 						else if (CSides != null)
 							UI.Prompt(batch, Controls.Left, Loc.Str("C-Sides"), bounds.BottomLeft + new Vec2(4, -UI.PromptSize - 8), out _, 0);
 						break;
+
 					case MenuState.BSides:
 						if (BSides is null) break;
 						for (int i = 0; i < BSides.Count; i++) {
@@ -222,9 +255,17 @@ public class Overworld : Scene
 						if (CSides != null)
 							UI.Prompt(batch, Controls.Left, Loc.Str("C-Side"), bounds.BottomLeft + new Vec2(4, -UI.PromptSize - 8), out _, 0);
 						break;
-					case MenuState.CSide:
+
+					case MenuState.CSides:
 						if (CSides is null) break;
-						CSides.Render(batch, bounds.Center + new Vec2(0, bounds.Height / 5));
+						for (int i = 0; i < CSides.Count; i++) {
+							var menu = CSides[i];
+							menu.Render(batch, new Vec2((i + 0.5f) * bounds.Width / CSides.Count, bounds.Center.Y + bounds.Center.Y / 5 + menu.Size.Y / 2));
+						}
+
+						batch.PushMatrix(Matrix3x2.CreateScale(1.2f) * Matrix3x2.CreateTranslation(bounds.BottomCenter + new Vec2(0, -8)));
+						UI.Text(batch, Loc.Str("C-Side"), Vec2.Zero, new Vec2(0.5f, 1), Color.White);
+						batch.PopMatrix();
 
 						if (BSides != null)
 							UI.Prompt(batch, Controls.Right, Loc.Str("B-Sides"), bounds.BottomRight + new Vec2(-8, -UI.PromptSize - 8), out _, 1);
@@ -336,21 +377,26 @@ public class Overworld : Scene
 					case Entry.MenuState.Start:
 						it.Menu.Update();
 						break;
+
 					case Entry.MenuState.ASides:
 						if (it.ASides is null) break;
 						foreach (var menu in it.ASides) {
 							menu.Update();
 						}
 						break;
+
 					case Entry.MenuState.BSides:
 						if (it.BSides is null) break;
 						foreach (var menu in it.BSides) {
 							menu.Update();
 						}
 						break;
-					case Entry.MenuState.CSide:
+						
+					case Entry.MenuState.CSides:
 						if (it.CSides == null) break;
-						it.CSides.Update();
+						foreach (var menu in it.CSides) {
+							menu.Update();
+						}
 						break;
 				}
 			}
@@ -433,12 +479,21 @@ public class Overworld : Scene
 							currentEntry.SelectedSubmap = currentEntry.SelectedSubmap[0 .. ^4];
 						break;
 
-					case Entry.MenuState.CSide:
+					case Entry.MenuState.CSides:
 						// Make sure the c-side exists
 						if (!Assets.Maps.TryGetValue(currentEntry.Level.CSideMap, out _)) break;
 						Audio.Play(Sfx.main_menu_start_game);
 						Game.Instance.Music.Stop();
 						state = States.EntertingCSide;
+						currentEntry.SelectedCheckpoint = currentEntry.CSides?[currentEntry.currentCSideMenuIndex].CurrentItem.Label;
+						if (currentEntry.SelectedCheckpoint?.StartsWith("Continue") ?? false)
+						{
+							if (currentEntry.SelectedCheckpoint == "Continue")
+								currentEntry.SelectedCheckpoint = Map.StartCheckpoint;
+							// Get the checkpoint name from the parenthesis
+							else
+								currentEntry.SelectedCheckpoint = currentEntry.SelectedCheckpoint[10 .. ^1];
+						}
 						break;
 				}
 			}
@@ -463,7 +518,7 @@ public class Overworld : Scene
 					else if (currentEntry.CSides is not null)
 					{
 						Audio.Play(Sfx.ui_move);
-						currentEntry.CurrentMenuState = Entry.MenuState.CSide;
+						currentEntry.CurrentMenuState = Entry.MenuState.CSides;
 					}
 				}
 				else if (currentEntry.CurrentMenuState == Entry.MenuState.ASides)
@@ -476,7 +531,7 @@ public class Overworld : Scene
 					else if (currentEntry.CSides is not null)
 					{
 						Audio.Play(Sfx.ui_move);
-						currentEntry.CurrentMenuState = Entry.MenuState.CSide;
+						currentEntry.CurrentMenuState = Entry.MenuState.CSides;
 					}
 				}
 				else if (currentEntry.CurrentMenuState == Entry.MenuState.BSides)
@@ -484,7 +539,7 @@ public class Overworld : Scene
 					if (currentEntry.CSides != null)
 					{
 						Audio.Play(Sfx.ui_move);
-						currentEntry.CurrentMenuState = Entry.MenuState.CSide;
+						currentEntry.CurrentMenuState = Entry.MenuState.CSides;
 					}
 				}
 			}
@@ -500,7 +555,7 @@ public class Overworld : Scene
 					if (currentEntry.ASides is not null) currentEntry.CurrentMenuState = Entry.MenuState.ASides;
 					else currentEntry.CurrentMenuState = Entry.MenuState.Start;
 				}
-				else if (currentEntry.CurrentMenuState == Entry.MenuState.CSide)
+				else if (currentEntry.CurrentMenuState == Entry.MenuState.CSides)
 				{
 					Audio.Play(Sfx.ui_move);
 					if (currentEntry.BSides != null) currentEntry.CurrentMenuState = Entry.MenuState.BSides;
@@ -510,18 +565,39 @@ public class Overworld : Scene
 			}
 			else if (Controls.Menu.Horizontal.Positive.Pressed) {
 				if (currentEntry.CurrentMenuState == Entry.MenuState.ASides && currentEntry.ASides is not null ||
-					 currentEntry.CurrentMenuState == Entry.MenuState.BSides && currentEntry.BSides is not null) 
+					 currentEntry.CurrentMenuState == Entry.MenuState.BSides && currentEntry.BSides is not null ||
+					 currentEntry.CurrentMenuState == Entry.MenuState.CSides && currentEntry.CSides is not null) 
 				{
-					var menuList = currentEntry.CurrentMenuState == Entry.MenuState.ASides ? currentEntry.ASides : currentEntry.BSides;
+					List<Menu>? menuList = null;
+					switch (currentEntry.CurrentMenuState)
+					{
+						case Entry.MenuState.ASides:
+							menuList = currentEntry.ASides;
+							break;
+						case Entry.MenuState.BSides:
+							menuList = currentEntry.BSides;
+							break;
+						case Entry.MenuState.CSides:
+							menuList = currentEntry.CSides;
+							break;
+					}
 					if (menuList is null) goto End;
-					int menuIndex () {
-						return currentEntry.CurrentMenuState == Entry.MenuState.ASides ? currentEntry.currentASideMenuIndex : currentEntry.currentBSideMenuIndex;
+					int menuIndex () => currentEntry.CurrentMenuState switch
+					{
+						Entry.MenuState.BSides => currentEntry.currentBSideMenuIndex,
+						Entry.MenuState.CSides => currentEntry.currentCSideMenuIndex,
+						_ => currentEntry.currentASideMenuIndex
+					};
+
+                    void setMenuIndex (int value) {
+						switch (currentEntry.CurrentMenuState)
+						{
+							case Entry.MenuState.BSides: currentEntry.currentBSideMenuIndex = value; break;
+							case Entry.MenuState.CSides: currentEntry.currentCSideMenuIndex = value; break;
+							default: currentEntry.currentASideMenuIndex = value; break;
+						}
 					}
-					void setMenuIndex (int value) {
-						if (currentEntry.CurrentMenuState == Entry.MenuState.ASides)
-							currentEntry.currentASideMenuIndex = value;
-						else currentEntry.currentBSideMenuIndex = value;
-					}
+
 					if (menuIndex() >= menuList.Count - 1) goto End;
 					
 					menuList[menuIndex()].Focused = false;
@@ -537,18 +613,39 @@ public class Overworld : Scene
 			}
 			else if (Controls.Menu.Horizontal.Negative.Pressed) {
 				if (currentEntry.CurrentMenuState == Entry.MenuState.ASides && currentEntry.ASides is not null ||
-					 currentEntry.CurrentMenuState == Entry.MenuState.BSides && currentEntry.BSides is not null) 
+					 currentEntry.CurrentMenuState == Entry.MenuState.BSides && currentEntry.BSides is not null ||
+					 currentEntry.CurrentMenuState == Entry.MenuState.CSides && currentEntry.CSides is not null) 
 				{
-					var menuList = currentEntry.CurrentMenuState == Entry.MenuState.ASides ? currentEntry.ASides : currentEntry.BSides;
+					List<Menu>? menuList = null;
+					switch (currentEntry.CurrentMenuState)
+					{
+						case Entry.MenuState.ASides:
+							menuList = currentEntry.ASides;
+							break;
+						case Entry.MenuState.BSides:
+							menuList = currentEntry.BSides;
+							break;
+						case Entry.MenuState.CSides:
+							menuList = currentEntry.CSides;
+							break;
+					}
 					if (menuList is null) goto End;
-					int menuIndex () {
-						return currentEntry.CurrentMenuState == Entry.MenuState.ASides ? currentEntry.currentASideMenuIndex : currentEntry.currentBSideMenuIndex;
+					int menuIndex () => currentEntry.CurrentMenuState switch
+					{
+						Entry.MenuState.BSides => currentEntry.currentBSideMenuIndex,
+						Entry.MenuState.CSides => currentEntry.currentCSideMenuIndex,
+						_ => currentEntry.currentASideMenuIndex
+					};
+
+                    void setMenuIndex (int value) {
+						switch (currentEntry.CurrentMenuState)
+						{
+							case Entry.MenuState.BSides: currentEntry.currentBSideMenuIndex = value; break;
+							case Entry.MenuState.CSides: currentEntry.currentCSideMenuIndex = value; break;
+							default: currentEntry.currentASideMenuIndex = value; break;
+						}
 					}
-					void setMenuIndex (int value) {
-						if (currentEntry.CurrentMenuState == Entry.MenuState.ASides)
-							currentEntry.currentASideMenuIndex = value;
-						else currentEntry.currentBSideMenuIndex = value;
-					}
+					
 					if (menuIndex() < 1) goto End;
 					
 					menuList[menuIndex()].Focused = false;
@@ -598,7 +695,8 @@ public class Overworld : Scene
 		else if (state == States.EnteringCheckpoint) 
 		{
 			if (cameraCloseUpEase >= 1.0f) {
-				currentEntry.Level.Enter(currentEntry.SelectedCheckpoint ?? "Start", new SlideWipe(), 1.5f);
+				currentEntry.Level.Enter(currentEntry.SelectedCheckpoint ?? Map.StartCheckpoint, new SlideWipe(), 1.5f);
+				Save.CurrentRecord.Checkpoint = currentEntry.SelectedCheckpoint ?? Map.StartCheckpoint;
 			}
 		}
 		else if (state == States.EnteringSubmap)
@@ -644,10 +742,11 @@ public class Overworld : Scene
 			if (cameraCloseUpEase >= 1.0f)
 			{
 				Save.Instance.LevelID = currentEntry.Level.ID;
+				Save.CurrentRecord.CSideCheckpoint = currentEntry.SelectedCheckpoint ?? Map.StartCheckpoint;
 				Game.Instance.Goto(new Transition()
 				{
 					Mode = Transition.Modes.Replace,
-					Scene = () => new World(new(currentEntry.Level.CSideMap, "Start", false, World.EntryReasons.Entered, true)),
+					Scene = () => new World(new(currentEntry.Level.CSideMap, currentEntry.SelectedCheckpoint ?? Map.StartCheckpoint, false, World.EntryReasons.Entered, true)),
 					ToBlack = new SnowWipe(),
 					StopMusic = true,
 					HoldOnBlackFor = 1.5f,

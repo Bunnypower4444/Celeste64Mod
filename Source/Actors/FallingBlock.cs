@@ -10,6 +10,7 @@ public sealed class FallingBlock : Solid, IUnlockStrawberry
 
 	public Vec3? EndPosition;
 	public bool Secret = false;
+	public bool PlayerCanTrigger = true;
 
 	private States state = States.Wait;
 	private Vec3 startPosition;
@@ -40,7 +41,7 @@ public sealed class FallingBlock : Solid, IUnlockStrawberry
 
 		if (state == States.Wait)
 		{
-			if (triggered || HasPlayerRider())
+			if (triggered || (HasPlayerRider() && PlayerCanTrigger))
 			{
 				Audio.Play(Sfx.sfx_fallingblock_shake, Position);
 				state = States.Shake;
