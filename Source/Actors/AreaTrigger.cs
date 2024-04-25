@@ -105,7 +105,7 @@ public class AreaTrigger(string id) : Actor
         }
     }
 
-    public override void Update()
+    public override void LateUpdate()
     {
         base.Update();
         var inTrigger = PlayerIsInTrigger;
