@@ -338,26 +338,26 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		// run timers
 		{
 			if (tCoyote > 0)
-				tCoyote -= Time.Delta;
+				tCoyote -= World.DeltaTime;
 			if (tHoldJump > 0)
-				tHoldJump -= Time.Delta;
+				tHoldJump -= World.DeltaTime;
 			if (tDashCooldown > 0)
-				tDashCooldown -= Time.Delta;
+				tDashCooldown -= World.DeltaTime;
 			if (tDashResetCooldown > 0)
-				tDashResetCooldown -= Time.Delta;
+				tDashResetCooldown -= World.DeltaTime;
 			if (tDashResetFlash > 0)
-				tDashResetFlash -= Time.Delta;
+				tDashResetFlash -= World.DeltaTime;
 			if (tNoMove > 0)
-				tNoMove -= Time.Delta;
+				tNoMove -= World.DeltaTime;
 			if (tPlatformVelocityStorage > 0)
-				tPlatformVelocityStorage -= Time.Delta;
+				tPlatformVelocityStorage -= World.DeltaTime;
 			if (tGroundSnapCooldown > 0)
-				tGroundSnapCooldown -= Time.Delta;
+				tGroundSnapCooldown -= World.DeltaTime;
 			if (tClimbCooldown > 0)
-				tClimbCooldown -= Time.Delta;
+				tClimbCooldown -= World.DeltaTime;
 
 			if (World.Wind != Vec3.Zero)
-				windHairTimer += Time.Delta;
+				windHairTimer += World.DeltaTime;
 			else
 				windHairTimer = 0;
 		}
@@ -402,13 +402,13 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 				if (stateMachine.State == States.Climbing)
 					wind = new(0, 0, wind.Z);
 				velocity += wind;
-				var amount = velocity * Time.Delta;
+				var amount = velocity * World.DeltaTime;
 				SweepTestMove(amount, tNoMove <= 0);
 				velocity -= wind;
 			}
 			else
 			{
-				var amount = velocity * Time.Delta;
+				var amount = velocity * World.DeltaTime;
 				SweepTestMove(amount, tNoMove <= 0);
 			}
 
@@ -542,13 +542,13 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 		// update model
 		{
-			Calc.Approach(ref ModelScale.X, 1, Time.Delta / .8f);
-			Calc.Approach(ref ModelScale.Y, 1, Time.Delta / .8f);
-			Calc.Approach(ref ModelScale.Z, 1, Time.Delta / .8f);
+			Calc.Approach(ref ModelScale.X, 1, World.DeltaTime / .8f);
+			Calc.Approach(ref ModelScale.Y, 1, World.DeltaTime / .8f);
+			Calc.Approach(ref ModelScale.Z, 1, World.DeltaTime / .8f);
 
-			Facing = Calc.AngleToVector(Calc.AngleApproach(Facing.Angle(), targetFacing.Angle(), MathF.Tau * 2 * Time.Delta));
+			Facing = Calc.AngleToVector(Calc.AngleApproach(Facing.Angle(), targetFacing.Angle(), MathF.Tau * 2 * World.DeltaTime));
 
-			Model.Update();
+			Model.Update(World.DeltaTime);
 			Model.Transform = Matrix.CreateScale(ModelScale * 3);
 
 			if (stateMachine.State != States.Feather && stateMachine.State != States.FeatherStart)
@@ -591,14 +591,14 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 				var len = World.Wind.Length();
 				wind = World.Wind.Normalized() * (len < 5 ? len : 5) + new Vec3(0, 0, MathF.Sin(windHairTimer * 4) * 0.5f);
 			}
-			Hair.Update(hairMatrix, wind);
+			Hair.Update(hairMatrix, wind, World.DeltaTime);
 		}
 
 		// trails
 		for (int i = trails.Count - 1; i >= 0; i--)
 		{
 			if (trails[i].Percent < 1)
-				trails[i].Percent += Time.Delta / 0.5f;
+				trails[i].Percent += World.DeltaTime / 0.5f;
 		}
 	}
 
@@ -1112,7 +1112,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 					fric *= AirFrictionMult;
 
 				// friction
-				Calc.Approach(ref velXY, Vec2.Zero, fric * Time.Delta);
+				Calc.Approach(ref velXY, Vec2.Zero, fric * World.DeltaTime);
 			}
 			else if (onGround)
 			{
@@ -1195,14 +1195,14 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 						else
 							rotate = RotateSpeed;
 
-						targetFacing = Calc.RotateToward(targetFacing, input, rotate * Time.Delta, 0);
-						velXY = targetFacing * Calc.Approach(velXY.Length(), max, accel * Time.Delta);
+						targetFacing = Calc.RotateToward(targetFacing, input, rotate * World.DeltaTime, 0);
+						velXY = targetFacing * Calc.Approach(velXY.Length(), max, accel * World.DeltaTime);
 					}
 				}
 				else
 				{
 					// if we're below the RotateThreshold, acceleration is very simple
-					Calc.Approach(ref velXY, input * max, accel * Time.Delta);
+					Calc.Approach(ref velXY, input * max, accel * World.DeltaTime);
 
 					targetFacing = input.Normalized();
 				}
@@ -1225,7 +1225,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 					accel *= Calc.ClampedMap(dot, -1, 1, AirAccelMultMin, AirAccelMultMax);
 				}
 
-				Calc.Approach(ref velXY, RelativeMoveInput * MaxSpeed, accel * Time.Delta);
+				Calc.Approach(ref velXY, RelativeMoveInput * MaxSpeed, accel * World.DeltaTime);
 			}
 
 			velocity = velocity.WithXY(velXY);
@@ -1234,7 +1234,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		// Footstep sounds
 		if (onGround && velocity.XY().Length() > 10)
 		{
-			tFootstep -= Time.Delta * Model.Rate;
+			tFootstep -= World.DeltaTime * Model.Rate;
 			if (tFootstep <= 0)
 			{
 				tFootstep = FootstepInterval;
@@ -1285,7 +1285,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 					autoJump = false;
 				}
 
-				Calc.Approach(ref velocity.Z, MaxFall, Gravity * mult * Time.Delta);
+				Calc.Approach(ref velocity.Z, MaxFall, Gravity * mult * World.DeltaTime);
 				tHoldJump = 0;
 
 			}
@@ -1385,7 +1385,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	{
 		Model.Play("Dash");
 
-		tDash -= Time.Delta;
+		tDash -= World.DeltaTime;
 		if (tDash <= 0)
 		{
 			if (!onGround)
@@ -1402,12 +1402,12 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 		if (Controls.Move.Value != Vec2.Zero && Vec2.Dot(Controls.Move.Value, targetFacing) >= -.2f)
 		{
-			targetFacing = Calc.RotateToward(targetFacing, RelativeMoveInput, DashRotateSpeed * Time.Delta, 0);
+			targetFacing = Calc.RotateToward(targetFacing, RelativeMoveInput, DashRotateSpeed * World.DeltaTime, 0);
 			SetDashSpeed(targetFacing);
 		}
 
 		if (tNoDashJump > 0)
-			tNoDashJump -= Time.Delta;
+			tNoDashJump -= World.DeltaTime;
 
 		// dash jump
 		if (dashedOnGround && tCoyote > 0 && tNoDashJump <= 0 && Controls.Jump.ConsumePress())
@@ -1492,7 +1492,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private void StSkiddingUpdate()
 	{
 		if (tNoSkidJump > 0)
-			tNoSkidJump -= Time.Delta;
+			tNoSkidJump -= World.DeltaTime;
 
 		if (TryDash())
 			return;
@@ -1523,7 +1523,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 				accel = SkiddingAccel;
 			else
 				accel = SkiddingStartAccel;
-			Calc.Approach(ref velXY, RelativeMoveInput * MaxSpeed, accel * Time.Delta);
+			Calc.Approach(ref velXY, RelativeMoveInput * MaxSpeed, accel * World.DeltaTime);
 			velocity = velocity.WithXY(velXY);
 			
 			// reached target
@@ -1633,7 +1633,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			if (MathF.Abs(move.Z) < 0.1f) move.Z = 0;
 
 			if (move != Vec3.Zero)
-				SweepTestMove(move * ClimbSpeed * Time.Delta, false);
+				SweepTestMove(move * ClimbSpeed * World.DeltaTime, false);
 
 			if (MathF.Abs(inputTranslated.X) < 0.25f && inputTranslated.Y >= 0)
 			{
@@ -1674,7 +1674,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 				cameraTargetForward = new Vec3(Calc.AngleToVector(angle), cameraTargetForward.Z);
 			}
 
-			Calc.Approach(ref climbCornerEase, 0, Time.Delta / 0.20f);
+			Calc.Approach(ref climbCornerEase, 0, World.DeltaTime / 0.20f);
 			return;
 		}
 
@@ -1862,7 +1862,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		SetHairColor(CFeather);
 		HandleFeatherZ();
 
-		tFeatherStart -= Time.Delta;
+		tFeatherStart -= World.DeltaTime;
 		if (tFeatherStart <= 0)
 		{
 			stateMachine.State = States.Feather;
@@ -1870,7 +1870,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		}
 
 		var velXY = velocity.XY();
-		Calc.Approach(ref velXY, Vec2.Zero, 200 * Time.Delta);
+		Calc.Approach(ref velXY, Vec2.Zero, 200 * World.DeltaTime);
 		velocity = velocity.WithXY(velXY);
 
 		// dashing
@@ -1903,7 +1903,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	}
 
 	private void HandleFeatherZ()
-		=> Calc.Approach(ref velocity.Z, (featherZ - Position.Z) * 40, 600 * Time.Delta);
+		=> Calc.Approach(ref velocity.Z, (featherZ - Position.Z) * 40, 600 * World.DeltaTime);
 
 	#endregion
 
@@ -1953,12 +1953,12 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		else
 			input = targetFacing;
 
-		velXY = Calc.RotateToward(velXY, input * FeatherFlySpeed, FeatherTurnSpeed * Time.Delta, FeatherAccel * Time.Delta);
+		velXY = Calc.RotateToward(velXY, input * FeatherFlySpeed, FeatherTurnSpeed * World.DeltaTime, FeatherAccel * World.DeltaTime);
 		targetFacing = velXY.Normalized();
 		velocity = velocity.WithXY(velXY);
 
-		tFeather -= Time.Delta;
-		tFeatherWallBumpCooldown -= Time.Delta;
+		tFeather -= World.DeltaTime;
+		tFeatherWallBumpCooldown -= World.DeltaTime;
 
 		if (tFeather <= EndWarningTime && !featherPlayedEndWarn)
 		{

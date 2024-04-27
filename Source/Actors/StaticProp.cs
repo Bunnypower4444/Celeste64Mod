@@ -23,7 +23,7 @@ public class StaticProp : Actor, IHaveModels, IHavePushout, IListenToAudioCallba
 
     public override void Update()
     {	
-		Calc.Approach(ref scale, 1.0f, Time.Delta);
+		Calc.Approach(ref scale, 1.0f, World.DeltaTime);
     }
 
     public void CollectModels(List<(Actor Actor, Model Model)> populate)

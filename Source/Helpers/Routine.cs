@@ -100,13 +100,13 @@ public class Routine
 		condition = null;
 	}
 
-	public void Update()
+	public void Update(float? delta = null)
 	{
 	RunAgain:
 
 		if (waiting > 0)
 		{
-			waiting -= Time.Delta;
+			waiting -= delta ?? Time.Delta;
 			return;
 		}
 

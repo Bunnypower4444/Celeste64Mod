@@ -80,7 +80,7 @@ public abstract class NPC : Actor, IHaveModels, IHaveSprites, IHavePushout, ICas
 	public override void Update()
 	{
 		if (World.Camera.Frustum.Contains(WorldBounds))
-			Model.Update();
+			Model.Update(World.DeltaTime);
 		showTimer += Time.Delta;
 	}
 

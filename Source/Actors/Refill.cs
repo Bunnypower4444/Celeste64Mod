@@ -52,7 +52,7 @@ public class Refill : Actor, IHaveSprites, IPickup, IHaveModels, ICastPointShado
 	{
 		if (tCooldown > 0)
 		{
-			tCooldown -= Time.Delta;
+			tCooldown -= World.DeltaTime;
 			if (tCooldown <= 0.0f)
 			{
 				UpdateOffScreen = false;
@@ -61,14 +61,14 @@ public class Refill : Actor, IHaveSprites, IPickup, IHaveModels, ICastPointShado
 		}
 
 		if (tCollect > 0)
-			tCollect -= Time.Delta * 3.0f;
+			tCollect -= World.DeltaTime * 3.0f;
 
 		PointShadowAlpha = tCooldown <= 0 ? 1 : 0;
 
 		Particles.SpawnParticle(
 			Position + new Vec3(6 - World.Rng.Float() * 12, 6 - World.Rng.Float() * 12, 6 - World.Rng.Float() * 12),
-			new Vec3(0, 0, 0), 1);
-		Particles.Update(Time.Delta);
+			new Vec3(0, 0, 0), 1, World.DeltaTime);
+		Particles.Update(World.DeltaTime);
 	}
 
 	public void Pickup(Player player)

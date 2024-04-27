@@ -100,8 +100,8 @@ public class Strawberry : Actor, IHaveModels, IHaveSprites, IPickup, ICastPointS
 		{
 			Particles.SpawnParticle(
 				Position + new Vec3(6 - World.Rng.Float() * 12, 6 - World.Rng.Float() * 12, 6 - World.Rng.Float() * 12),
-				new Vec3(0,0,0), 1);
-			Particles.Update(Time.Delta);
+				new Vec3(0,0,0), 1, World.DeltaTime);
+			Particles.Update(World.DeltaTime);
 		}
 		else
 		{

@@ -62,7 +62,7 @@ public sealed class FallingBlock : Solid, IUnlockStrawberry
 		}
 		else if (state == States.Fall)
 		{
-			Calc.Approach(ref Velocity.Z, MaxFallSpeed, Gravity * Time.Delta);
+			Calc.Approach(ref Velocity.Z, MaxFallSpeed, Gravity * World.DeltaTime);
 
 			if (EndPosition.HasValue)
 			{
@@ -95,7 +95,7 @@ public sealed class FallingBlock : Solid, IUnlockStrawberry
 		}
 		else if (state == States.Respawn)
 		{
-			respawnDelay -= Time.Delta;
+			respawnDelay -= World.DeltaTime;
 			if (respawnDelay <= 0)
 			{
 				MoveTo(startPosition);

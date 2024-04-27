@@ -38,11 +38,11 @@ public class Spring : Attacher, IHaveModels, IPickup
 
 	public override void Update()
 	{
-		Model.Update();
+		Model.Update(World.DeltaTime);
 
 		if (tCooldown > 0)
 		{
-			tCooldown -= Time.Delta;
+			tCooldown -= World.DeltaTime;
 			if (tCooldown <= 0)
 				UpdateOffScreen = false;
 		}

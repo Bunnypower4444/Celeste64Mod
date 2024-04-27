@@ -24,14 +24,14 @@ public class Dust : Actor, IHaveSprites, IRecycle
 
 	public override void Update()
 	{
-		Position += Velocity * Time.Delta;
-		Velocity.Z += 10 * Time.Delta;
+		Position += Velocity * World.DeltaTime;
+		Velocity.Z += 10 * World.DeltaTime;
 
 		var vxy = Velocity.XY();
-		vxy = Calc.Approach(vxy, Vec2.Zero, 200 * Time.Delta);
+		vxy = Calc.Approach(vxy, Vec2.Zero, 200 * World.DeltaTime);
 		Velocity = Velocity.WithXY(vxy);
 
-		Percent += Time.Delta / Duration;
+		Percent += World.DeltaTime / Duration;
 		if (Percent >= 1.0f)
 			World.Destroy(this);
 	}

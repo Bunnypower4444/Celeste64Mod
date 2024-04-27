@@ -35,7 +35,7 @@ public class DoubleDashPuzzleBlock : Solid, IUnlockStrawberry, IHaveSprites
 
 		if (ready && pulse > 0)
 		{
-			pulse -= Time.Delta;
+			pulse -= World.DeltaTime;
 			if (pulse <= 0)
 				Satisfied = true;
 		}

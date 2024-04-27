@@ -27,7 +27,7 @@ public class MovingBlock : Solid
 	{
 		base.Update();
 
-		Calc.Approach(ref lerp, target, Time.Delta / (goSlow ? 2 : 1));
+		Calc.Approach(ref lerp, target, World.DeltaTime / (goSlow ? 2 : 1));
 		if (lerp == target)
 			target = 1 + -(int)target;
 

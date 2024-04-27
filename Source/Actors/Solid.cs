@@ -76,12 +76,12 @@ public class Solid : Actor, IHaveModels
     public override void Update()
 	{
 		if (Velocity.LengthSquared() > .001f)
-			MoveTo(Position + Velocity * Time.Delta);
+			MoveTo(Position + Velocity * World.DeltaTime);
 
 		// virtual shaking
 		if (TShake > 0)
 		{
-			TShake -= Time.Delta;
+			TShake -= World.DeltaTime;
 			if (TShake <= 0)
 				Model.Transform = Matrix.Identity;
 			else if (Time.OnInterval(.02f))

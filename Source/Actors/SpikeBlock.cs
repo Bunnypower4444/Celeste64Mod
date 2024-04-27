@@ -51,8 +51,10 @@ public class SpikeBlock : Attacher, IHaveModels
 
 			if (forward.X != 0)
 				rotation = Matrix.CreateRotationY(MathF.PI / 2);
-			else
+			else if (forward.Y != 0)
 				rotation = Matrix.CreateRotationX(-MathF.PI / 2);
+			else
+				rotation = Matrix.CreateRotationY(MathF.PI);
 		}
 
 		var width = (horizontal * size).Length();

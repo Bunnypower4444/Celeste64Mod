@@ -32,7 +32,7 @@ public static class SpringPhysics
 		return 1.0f / (1.0f + x + 0.48f * x * x + 0.235f * x * x * x);
 	}
 
-	public static float Calculate(float x, float vel, float xGoal, float velGoal, float frequency, float halflife)
+	public static float Calculate(float x, float vel, float xGoal, float velGoal, float frequency, float halflife, float? delta = null)
 	{
 		float g = xGoal;
 		float q = velGoal;
@@ -40,7 +40,7 @@ public static class SpringPhysics
 		float d = HalflifeToDamping(halflife);
 		float c = g + (d * q) / (s + Epsilon);
 		float y = d / 2.0f;
-		float dt = Time.Delta;
+		float dt = delta ?? Time.Delta;
 
 		if (MathF.Abs(s - (d * d) / 4.0f) < Epsilon) // Critically Damped
 		{

@@ -48,10 +48,10 @@ public class Hair : Model
 
 	}
 
-	public void Update(in Matrix positionTransform, Vec3? wind = null)
+	public void Update(in Matrix positionTransform, Vec3? wind = null, float? delta = null)
 	{
 		modified = true;
-		wave += Time.Delta * 4.0f;
+		wave += delta ?? Time.Delta * 4.0f;
 		OffsetPerNode = Forward * ForwardOffsetPerNode + new Vec3(0, 0, -1 * (1 - Roundness));
 		if (wind.HasValue) OffsetPerNode += (Vec3)wind;
 		Origin = new Vec3(0, 1.0f, -.4f);

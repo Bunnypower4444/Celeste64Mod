@@ -85,7 +85,7 @@ public class IntroCar : Solid
 		}
 
 		var target = (hasRider ? spawnPoint - Vec3.UnitZ * 1.5f : spawnPoint);
-		var step = Utils.Approach(Position, target, 20 * Time.Delta);
+		var step = Utils.Approach(Position, target, 20 * World.DeltaTime);
 		MoveTo(step);
     }
 

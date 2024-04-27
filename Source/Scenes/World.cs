@@ -15,6 +15,8 @@ public class World : Scene
 	public EntryInfo Entry = new();
 	public readonly GridPartition<Solid> SolidGrid = new(200, 100);
 	public float GeneralTimer = 0;
+	public float GameSpeed = 1;
+	public float DeltaTime => GameSpeed * Time.Delta;
 	public float DeathPlane = -100;
 	private Vec3 wind = Vec3.Zero;
 	public Vec3 Wind { get => wind; set {
@@ -381,11 +383,11 @@ public class World : Scene
 			// pause from hitstun
 			if (HitStun > 0)
 			{
-				HitStun -= Time.Delta;
+				HitStun -= DeltaTime;
 				return;
 			}
 
-			GeneralTimer += Time.Delta;
+			GeneralTimer += DeltaTime;
 
 			// add / remove actors
 			ResolveChanges();

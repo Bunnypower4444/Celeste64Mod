@@ -18,14 +18,14 @@ public class Debris : Actor, IRecycle, IHaveSprites
 
 	public override void Update()
 	{
-		Position += Velocity * Time.Delta;
-		Velocity.Z -= 200 * Time.Delta;
+		Position += Velocity * World.DeltaTime;
+		Velocity.Z -= 200 * World.DeltaTime;
 
 		var vxy = Velocity.XY();
-		vxy = Calc.Approach(vxy, Vec2.Zero, 400 * Time.Delta);
+		vxy = Calc.Approach(vxy, Vec2.Zero, 400 * World.DeltaTime);
 		Velocity = Velocity.WithXY(vxy);
 
-		Timer += Time.Delta;
+		Timer += World.DeltaTime;
 		if (Timer > 2.0f)
 			World.Destroy(this);
 	}

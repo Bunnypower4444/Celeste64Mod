@@ -33,9 +33,9 @@ public class ParticleSystem
 		Theme = theme;
 	}
 
-	public void SpawnParticle(Vec3 position, Vec3 velocity, float rateMultiplier)
+	public void SpawnParticle(Vec3 position, Vec3 velocity, float rateMultiplier, float? delta = null)
 	{
-		Accumulator += rateMultiplier * Theme.Rate * Time.Delta;
+		Accumulator += rateMultiplier * Theme.Rate * delta ?? Time.Delta;
 
 		while (Accumulator > 0)
 		{

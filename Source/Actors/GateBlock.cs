@@ -55,7 +55,7 @@ public class GateBlock(Vec3 end, string unlockGroup = "") : Solid
 		}
 		else if (routine.IsRunning)
 		{
-			routine.Update();
+			routine.Update(World.DeltaTime);
 		}
 	}
 
@@ -68,7 +68,7 @@ public class GateBlock(Vec3 end, string unlockGroup = "") : Solid
 		var normal = (End - Position).Normalized();
 		while (Position != End && Vec3.Dot((End - Position).Normalized(), normal) >= 0)
 		{
-			Velocity = Utils.Approach(Velocity, MaxSpeed * normal, Acceleration * Time.Delta);
+			Velocity = Utils.Approach(Velocity, MaxSpeed * normal, Acceleration * World.DeltaTime);
 			yield return Co.SingleFrame;
 		}
 

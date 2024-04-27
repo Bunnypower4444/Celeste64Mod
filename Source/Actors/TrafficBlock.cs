@@ -26,7 +26,7 @@ public class TrafficBlock(Vec3 end) : Solid
 	public override void Update()
 	{
 		base.Update();
-		routine.Update();
+		routine.Update(World.DeltaTime);
 	}
 
 	private CoEnumerator Sequence()
@@ -48,7 +48,7 @@ public class TrafficBlock(Vec3 end) : Solid
 				var normal = (target - Position).Normalized();
 				while (Position != target && Vec3.Dot((target - Position).Normalized(), normal) >= 0)
 				{
-					Velocity = Utils.Approach(Velocity, MaxSpeed * normal, Acceleration * Time.Delta);
+					Velocity = Utils.Approach(Velocity, MaxSpeed * normal, Acceleration * World.DeltaTime);
 					yield return Co.SingleFrame;
 				}
 

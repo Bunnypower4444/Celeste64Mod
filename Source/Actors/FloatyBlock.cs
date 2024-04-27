@@ -38,14 +38,14 @@ public sealed class FloatyBlock : Solid
 		friction = 200;
 		frictionThreshold = 1;
 		if (friction > 0 && Velocity.LengthSquared() > Calc.Squared(frictionThreshold))
-			Velocity = Utils.Approach(Velocity, Velocity.Normalized() * frictionThreshold, friction * Time.Delta);
+			Velocity = Utils.Approach(Velocity, Velocity.Normalized() * frictionThreshold, friction * World.DeltaTime);
 
 		// spring!
 		Vec3 diff = Position - (origin + offset);
 		Vec3 normal = diff.Normalized();
 		float vel = Vec3.Dot(Velocity, normal);
 		float old_vel = vel;
-		vel = SpringPhysics.Calculate(diff.Length(), vel, 0, 0, frequency, halflife);
+		vel = SpringPhysics.Calculate(diff.Length(), vel, 0, 0, frequency, halflife, World.DeltaTime);
 		Velocity += normal * (vel - old_vel);
 	}
 }

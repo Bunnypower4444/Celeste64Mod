@@ -53,11 +53,11 @@ public class Badeline : NPC
 			hair.Flags = Model.Flags;
 			hair.Forward = -new Vec3(Facing, 0);
 			hair.Materials[0].Effects = 0;
-			hair.Update(hairMatrix);
+			hair.Update(hairMatrix, delta: World.DeltaTime);
 		}
 		
 		if (routine.IsRunning)
-			routine.Update();
+			routine.Update(World.DeltaTime);
     }
 
     public override void Interact(Player player)
@@ -104,7 +104,7 @@ public class Badeline : NPC
 
 		while (time < MoveTime)
 		{
-			time += Time.Delta;
+			time += World.DeltaTime;
 			var ease = Ease.Cube.InOut(time / MoveTime);
 			Position = Vec3.Lerp(origPos, player.Position, ease);
 			Facing = Vec2.Transform(origFacing, Matrix3x2.CreateRotation((player.Facing.Angle() - origFacing.Angle()) * ease));

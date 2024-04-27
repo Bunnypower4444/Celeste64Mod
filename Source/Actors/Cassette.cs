@@ -43,8 +43,8 @@ public class Cassette : Actor, IHaveModels, IPickup, IHaveSprites, ICastPointSha
 	public override void Update()
 	{
 		PointShadowAlpha = IsCollected ? 0.5f : 1.0f;
-		Calc.Approach(ref tCooldown, 0, Time.Delta);
-		Calc.Approach(ref tWiggle, 0, Time.Delta / 0.7f);
+		Calc.Approach(ref tCooldown, 0, World.DeltaTime);
+		Calc.Approach(ref tWiggle, 0, World.DeltaTime / 0.7f);
 	}
 
 	public void CollectModels(List<(Actor Actor, Model Model)> populate)
