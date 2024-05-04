@@ -48,6 +48,13 @@ public class Map
 		["Cassette"] = new((map, entity) => new Cassette(entity.GetStringProperty("map", string.Empty))),
 		["Coin"] = new((map, entity) => new Coin()),
 		["Feather"] = new((map, entity) => new Feather()),
+		["PurpleOrb"] = new((map, entity) => 
+		{
+			if (map.FindTargetNode(entity.GetStringProperty("target", string.Empty), out var point))
+				return new PurpleOrb(point.Z);
+			else
+				return new PurpleOrb();
+		}),
 		["MovingBlock"] = new((map, entity) =>
 		{
 			return new MovingBlock(
@@ -63,6 +70,7 @@ public class Map
 		["FloatyBlock"] = new((map, entity) => new FloatyBlock()) { IsSolidGeometry = true },
 		["DeathBlock"] = new((map, entity) => new DeathBlock()) { UseSolidsAsBounds = true },
 		["SpikeBlock"] = new((map, entity) => new SpikeBlock()) { UseSolidsAsBounds = true },
+		["SemiSolidPlatform"] = new((map, entity) => new SemiSolidPlatform()) { IsSolidGeometry = true },
 		["Spring"] = new((map, entity) => new Spring(entity.GetStringProperty("direction", "up"))),
 		["Granny"] = new((map, entity) => new Granny()),
 		["Badeline"] = new((map, entity) => new Badeline()),
