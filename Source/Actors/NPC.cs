@@ -5,6 +5,7 @@ public abstract class NPC : Actor, IHaveModels, IHaveSprites, IHavePushout, ICas
 {
 	public SkinnedModel Model;
 
+	public bool Interactable => InteractEnabled && CheckForDialog();
 	public bool InteractEnabled = true;
 	public float InteractRadius = 16;
 	public Vec3 InteractHoverOffset;
@@ -42,9 +43,8 @@ public abstract class NPC : Actor, IHaveModels, IHaveSprites, IHavePushout, ICas
 	public bool CheckForDialog()
 	{ 
 		if (dialogueFactory != null)
-			InteractEnabled = dialogueFactory(DialogueIndex) != null;
-		else InteractEnabled = DialogueIndex < Dialogue.Length && Dialogue[DialogueIndex] != null;
-		return InteractEnabled;
+			return dialogueFactory(DialogueIndex) != null;
+		else return DialogueIndex < Dialogue.Length && Dialogue[DialogueIndex] != null;
 	}
 
 	public List<Language.Line>? GetCurrentLine()

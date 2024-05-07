@@ -19,21 +19,21 @@
 
 @PointClass size(-16 -16 0, 16 16 16) model({ "path": model }) = StaticProp : "Static Prop" 
 [
-    model(String) : "Model file path" : : "Set this to a 3D model file."
+	model(String) : "Model file path" : : "Set this to a 3D model file."
 	radius(integer) : "Radius" : 6 : "Pushout Radius"
 	height(integer) : "Height" : 12 : "Pushout Height"
 ]
 
 @PointClass size(-16 -16 0, 16 16 32) = PlayerSpawn : "Player start position" 
 [
-    name(string) : "Name" : "Start"
+	name(string) : "Name" : "Start"
 ]
 
 @PointClass model({ "path": "Models/strawberry.glb", "scale": 12 }) = Strawberry : "Strawb Get!" 
 [
-    locked(integer) : "Locked" : 0
-    targetname(string) : "Target Name"
-    bubbleto(string) : "Bubble To" : : "If assigned, Strawberry will bubble the player"
+	locked(integer) : "Locked" : 0
+	targetname(string) : "Target Name"
+	bubbleto(string) : "Bubble To" : : "If assigned, Strawberry will bubble the player"
 ]
 
 @PointClass model({ "path": "Models/granny.glb", "scale": 12 }) = Granny : "She cool" 
@@ -50,18 +50,18 @@
 
 @PointClass model({ "path": "Models/sign.glb", "scale": 12 }) = SignPost : "Says some stuff" 
 [
-    dialog(string) : "Dialog Entry"
+	dialog(string) : "Dialog Entry"
 	angle(integer) : "Sign Rotation"
 ]
 
 @PointClass size(-8 -8 -8, 8 8 8) = Node : "Moving entity path node"
 [
-    targetname(string) : "Target Name"
+	targetname(string) : "Target Name"
 ]
 
 @PointClass size(-16 -16 -16, 16 16 16) = Refill : "Refill's Maddy's dashes"
 [
-    double(integer) : "Double" : 0
+	double(integer) : "Double" : 0
 ]
 
 @PointClass size(-16 -16 -16, 16 16 16) = Feather : "Lets Maddy fly for a short time"
@@ -69,9 +69,14 @@
 
 ]
 
+@PointClass size(-16 -16 -16, 16 16 16) = PurpleOrb : "Bounces player up"
+[
+	target(string) : "If set, the purple orb will be a cutscene and the cutscene will finish when the player reaches the node's Z position"
+]
+
 @PointClass size(-16 -16 -16, 16 16 16) = Cassette : "Warps to a B-Side challenge room"
 [
-    map(string) : "Map"
+	map(string) : "Map"
 ]
 
 @PointClass size(-16 -16 -16, 16 16 16) = Coin : "Collect em all to open a gate block"
@@ -86,13 +91,13 @@
 
 @PointClass model({ "path": "Models/spring_board.glb", "scale": 36 }) = Spring : "Bounces you..." 
 [
-    direction(string) : "What direction the spring bounces the player" : "up" : "up or side, 0 angle is -y direction"
-    angle(integer) : "Rotation"
+	direction(string) : "What direction the spring bounces the player" : "up" : "up or side, 0 angle is -y direction"
+	angle(integer) : "Rotation"
 ]
 
 @SolidClass = TrafficBlock : "Moves to the node when the player is riding it"
 [
-    target(string) : "Target Node"
+	target(string) : "Target Node"
 ]
 
 @SolidClass = FallingBlock : "Falls when player rides it"
@@ -140,6 +145,11 @@
 	startOn(integer) : "Start On" : : "If this block should start toggled on"
 ]
 
+@SolidClass = SemiSolidPlatform : "Allows the player to pass through it going up"
+[
+	
+]
+
 @SolidClass = EndingArea : "Where the game ends"
 [
 	
@@ -147,7 +157,7 @@
 
 @SolidClass = AreaTrigger : "An area that triggers events when the player enters and exits the area"
 [
-    id(string) : "ID of the area trigger"
+	id(string) : "ID of the area trigger"
 ]
 
 @SolidClass = FixedCamera : "Lock Camera Position to a Target"

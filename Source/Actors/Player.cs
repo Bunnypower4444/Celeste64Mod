@@ -67,6 +67,10 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private const float FeatherExitXYMult = .5f;
 	private const float FeatherExitZSpeed = 60;
 
+	private const float PurpleOrbStartTime = 0.4f;
+	private const float PurpleOrbLaunchSpeed = 160;
+	private const float PurpleOrbHoldJumpTime = 0.3f;
+
 	static private readonly Color CNormal = 0xdb2c00;
 	static private readonly Color CNoDash = 0x6ec0ff;
 	static private readonly Color CTwoDashes = 0xfa91ff;
@@ -108,7 +112,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		}
 	}
 
-	public record struct PlayerSettings(int MaxDashes = 1, bool RefillDashOnGround = true, bool CanDash = true, bool CanVerticalDash = true);
+	public record struct PlayerSettings(int MaxDashes = 1, bool RefillDashOnGround = true, bool CanDash = true, bool CanVerticalDash = true, bool CanMove = true);
 
 	#endregion
 
@@ -116,7 +120,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private static Vec3 storedCameraForward;
 	private static float storedCameraDistance;
 
-	private enum States { Normal, Dashing, Skidding, Climbing, StrawbGet, FeatherStart, Feather, Respawn, Dead, StrawbReveal, Cutscene, Bubble, Cassette, DebugFlying };
+	private enum States { Normal, Dashing, Skidding, Climbing, StrawbGet, FeatherStart, Feather, PurpleOrbLaunch, Respawn, Dead, StrawbReveal, Cutscene, Bubble, Cassette, BirdDashTutorial, DebugFlying };
 	private enum Events { Land };
 
 	private PlayerSettings settings;
@@ -234,12 +238,14 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		stateMachine.InitState(States.StrawbGet, StStrawbGetUpdate, StStrawbGetEnter, StStrawbGetExit, StStrawbGetRoutine);
 		stateMachine.InitState(States.FeatherStart, StFeatherStartUpdate, StFeatherStartEnter, StFeatherStartExit);
 		stateMachine.InitState(States.Feather, StFeatherUpdate, StFeatherEnter, StFeatherExit);
+		stateMachine.InitState(States.PurpleOrbLaunch, StPurpleOrbLaunchUpdate, StPurpleOrbLaunchEnter, StPurpleOrbLaunchExit, StPurpleOrbLaunchRoutine);
 		stateMachine.InitState(States.Respawn, StRespawnUpdate, StRespawnEnter, StRespawnExit);
 		stateMachine.InitState(States.StrawbReveal, null, StStrawbRevealEnter, StStrawbRevealExit, StStrawbRevealRoutine);
 		stateMachine.InitState(States.Cutscene, StCutsceneUpdate, StCutsceneEnter);
 		stateMachine.InitState(States.Dead, StDeadUpdate, StDeadEnter);
 		stateMachine.InitState(States.Bubble, null, null, StBubbleExit, StBubbleRoutine);
 		stateMachine.InitState(States.Cassette, null, null, StCassetteExit, StCassetteRoutine);
+		stateMachine.InitState(States.BirdDashTutorial, StBirdDashTutorialUpdate, StBirdDashTutorialEnter, StBirdDashTutorialExit, StBirdDashTutorialRoutine);
 		stateMachine.InitState(States.DebugFlying, StDebugFlyingUpdate, StDebugFlyingEnter, StDebugFlyingExit);
 
 		spikeBlockCheck = (spike) =>
@@ -248,7 +254,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		};
 
 		SetHairColor(0xdb2c00);
-		Settings = new(1, true, true, true);
+		Settings = new(1, true, true, true, true);
 	}
 
 	#region Added / Update
@@ -663,7 +669,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	{
 		get
 		{
-			if (Controls.Move.Value == Vec2.Zero)
+			if (!Settings.CanMove || Controls.Move.Value == Vec2.Zero)
 				return Vec2.Zero;
 
 			Vec2 forward, side;
@@ -758,7 +764,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			World.SolidWallCheckNearest(SolidHeadTestPos, WallPushoutDist, out hit))
 		{
 			// feather state handling
-			if (resolveImpact && stateMachine.State == States.Feather && tFeatherWallBumpCooldown <= 0 && !(Controls.Climb.Down && TryClimb()))
+			if (resolveImpact && stateMachine.State == States.Feather && tFeatherWallBumpCooldown <= 0 && !(Settings.CanMove && Controls.Climb.Down && TryClimb()))
 			{
 				Position += hit.Pushout;
 				velocity = velocity.WithXY(Vec2.Reflect(velocity.XY(), hit.Normal.XY().Normalized()));
@@ -957,7 +963,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 	private bool WallJumpCheck()
 	{
-		if (Controls.Jump.Pressed 
+		if (Settings.CanMove && Controls.Jump.Pressed 
 		&& World.SolidWallCheckClosestToNormal(SolidWaistTestPos, ClimbCheckDist, -new Vec3(targetFacing, 0), out var hit))
 		{
 			Controls.Jump.ConsumePress();
@@ -1080,7 +1086,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		if (onGround)
 		{
 			foreach (var actor in World.All<NPC>())
-				if (actor is NPC npc && npc.CheckForDialog() && npc.InteractEnabled)
+				if (actor is NPC npc && npc.Interactable)
 				{
 					if ((Position - npc.Position).LengthSquared() < npc.InteractRadius * npc.InteractRadius &&
 						Vec2.Dot((npc.Position - Position).XY(), targetFacing) > 0 &&
@@ -1103,7 +1109,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		{
 			var velXY = velocity.XY();
 
-			if (Controls.Move.Value == Vec2.Zero || tNoMove > 0)
+			if (Controls.Move.Value == Vec2.Zero || tNoMove > 0 || !Settings.CanMove)
 			{
 				// if not moving, simply apply friction
 
@@ -1252,7 +1258,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			tFootstep = FootstepInterval;
 
 		// start climbing
-		if (Controls.Climb.Down && tClimbCooldown <= 0 && TryClimb())
+		if (Settings.CanMove && Controls.Climb.Down && tClimbCooldown <= 0 && TryClimb())
 		{
 			stateMachine.State = States.Climbing;
 			return;
@@ -1263,13 +1269,13 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			return;
 
 		// jump & gravity
-		if (tCoyote > 0 && Controls.Jump.ConsumePress())
+		if (tCoyote > 0 && Settings.CanMove && Controls.Jump.ConsumePress())
 			Jump();
 		else if (WallJumpCheck())
 			WallJump();
 		else
 		{
-			if (tHoldJump > 0 && (autoJump || Controls.Jump.Down))
+			if (tHoldJump > 0 && (autoJump || (Settings.CanMove && Controls.Jump.Down)))
 			{
 				if (velocity.Z < holdJumpSpeed)
 					velocity.Z = holdJumpSpeed;
@@ -1277,7 +1283,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			else
 			{
 				float mult;
-				if ((Controls.Jump.Down || autoJump) && MathF.Abs(velocity.Z) < HalfGravThreshold)
+				if (((Settings.CanMove && Controls.Jump.Down) || autoJump) && MathF.Abs(velocity.Z) < HalfGravThreshold)
 					mult = .5f;
 				else
 				{
@@ -1340,7 +1346,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 	private bool TryDash()
 	{
-		if (Settings.CanDash && dashes > 0 && tDashCooldown <= 0 && Controls.Dash.ConsumePress())
+		if (Settings.CanDash && Settings.CanMove && dashes > 0 && tDashCooldown <= 0 && Controls.Dash.ConsumePress())
 		{
 			dashes--;
 			stateMachine.State = States.Dashing;
@@ -1400,7 +1406,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			CreateDashtTrail();
 		}
 
-		if (Controls.Move.Value != Vec2.Zero && Vec2.Dot(Controls.Move.Value, targetFacing) >= -.2f)
+		if (Controls.Move.Value != Vec2.Zero && Settings.CanMove && Vec2.Dot(Controls.Move.Value, targetFacing) >= -.2f)
 		{
 			targetFacing = Calc.RotateToward(targetFacing, RelativeMoveInput, DashRotateSpeed * World.DeltaTime, 0);
 			SetDashSpeed(targetFacing);
@@ -1410,7 +1416,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			tNoDashJump -= World.DeltaTime;
 
 		// dash jump
-		if (dashedOnGround && tCoyote > 0 && tNoDashJump <= 0 && Controls.Jump.ConsumePress())
+		if (dashedOnGround && tCoyote > 0 && tNoDashJump <= 0 && Settings.CanMove && Controls.Jump.ConsumePress())
 		{
 			stateMachine.State = States.Normal;
 			DashJump();
@@ -1508,7 +1514,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			var velXY = velocity.XY();
 
 			// skid jump
-			if (tNoSkidJump <= 0 && Controls.Jump.ConsumePress())
+			if (tNoSkidJump <= 0 && Settings.CanMove && Controls.Jump.ConsumePress())
 			{
 				stateMachine.State = States.Normal;
 				SkidJump();
@@ -1569,6 +1575,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 	private void StClimbingUpdate()
 	{
+		if (!Settings.CanMove) return;
 		if (!Controls.Climb.Down)
 		{
 			Audio.Play(Sfx.sfx_let_go, Position);
@@ -1998,6 +2005,80 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 	#endregion
 
+	#region Purple Orb Launch State
+
+	private PurpleOrb? currentPurpleOrb;
+
+	public void PurpleOrbLaunch(PurpleOrb purpleOrb)
+	{
+		currentPurpleOrb = purpleOrb;
+		stateMachine.State = States.PurpleOrbLaunch;
+	}
+
+	private void StPurpleOrbLaunchEnter()
+	{
+		RefillDash(1);
+		velocity = Vec3.Zero;
+	}
+
+	private void StPurpleOrbLaunchExit()
+	{
+		currentPurpleOrb = null;
+	}
+
+	private void StPurpleOrbLaunchUpdate()
+	{
+		CancelGroundSnap();
+	}
+
+	private CoEnumerator StPurpleOrbLaunchRoutine()
+	{
+		if (currentPurpleOrb == null)
+		{
+			stateMachine.State = States.Normal;
+			yield break;
+		}
+		
+		Vec3 vel = (currentPurpleOrb.Position + Vec3.UnitZ * 10 - Position) * 4;
+		while (World.GameSpeed > 0)
+		{
+			Calc.Approach(ref World.GameSpeed, 0, Time.Delta / PurpleOrbStartTime);
+			Position = Utils.Approach(Position, currentPurpleOrb.Position + Vec3.UnitZ * 10, vel.Length() * World.DeltaTime);
+			yield return Co.SingleFrame;
+		}
+
+		World.GameSpeed = 1;
+		velocity = new(0, 0, PurpleOrbLaunchSpeed);
+		RefillDash();
+
+		if (!currentPurpleOrb.IsCutscene)
+		{
+			stateMachine.State = States.Normal;
+			ModelScale = new(.6f, .6f, 1.4f);
+			holdJumpSpeed = velocity.Z = PurpleOrbLaunchSpeed;
+			tHoldJump = PurpleOrbHoldJumpTime;
+			tCoyote = 0;
+			autoJump = true;
+			yield break;
+		}
+
+		// Keep going up until we reach target distance
+		Position = Position.WithXY(currentPurpleOrb.Position.XY());
+		var prevFacing = Facing;
+		while (Position.Z < currentPurpleOrb.CutsceneHeight)
+		{
+			// Spin
+			Facing = targetFacing = new Vec2(MathF.Cos(Facing.Angle() - MathF.Tau * World.DeltaTime * 3), MathF.Sin(Facing.Angle() - MathF.Tau * World.DeltaTime * 3));
+			yield return Co.SingleFrame;
+		}
+
+		targetFacing = prevFacing;
+		
+		stateMachine.State = States.Normal;
+	}
+
+	#endregion
+
 	#region Respawn State
 
 	private void StRespawnEnter()
@@ -2264,6 +2345,58 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		drawModel = drawHair = true;
 		cameraOverride = null;
 		PointShadowAlpha = 1;
+	}
+
+	#endregion
+
+	#region Bird Dash Tutorial State
+
+	private Vec3 birdDashTutorialTargetPos;
+	private float birdDashTutorialTimeEase = 0;
+
+	public void StartBirdDashTutorial(Vec3 targetPos)
+	{
+		stateMachine.State = States.BirdDashTutorial;
+		birdDashTutorialTargetPos = targetPos;
+	}
+
+	private void StBirdDashTutorialEnter()
+	{
+		settings.CanMove = false;
+		velocity /= 5;
+		birdDashTutorialTimeEase = 0;
+	}
+
+	private void StBirdDashTutorialExit()
+	{
+		settings.CanMove = true;
+		World.GameSpeed = 1;
+	}
+
+	private void StBirdDashTutorialUpdate()
+	{
+		if (!Settings.CanMove)
+			return;
+		// Only allow vertical dash
+		if (Controls.Climb.Down && Controls.Move.Value.Length() < Controls.Move.CircularDeadzone && Controls.Dash.ConsumePress())
+		{
+			stateMachine.State = States.Dashing;
+		}
+	}
+
+	private CoEnumerator StBirdDashTutorialRoutine()
+	{
+		while (birdDashTutorialTimeEase < 1)
+		{
+			birdDashTutorialTimeEase += Time.Delta;
+			World.GameSpeed = 1 - Ease.Cube.Out(birdDashTutorialTimeEase);
+			var xy = Position.XY();
+			Calc.Approach(ref xy, birdDashTutorialTargetPos.XY(), World.DeltaTime * 100);
+			Position = Position.WithXY(xy);
+			velocity = Utils.Approach(velocity, Vec3.Zero, World.DeltaTime * 10);
+			yield return Co.SingleFrame;
+		}
+		settings.CanMove = true;
 	}
 
 	#endregion

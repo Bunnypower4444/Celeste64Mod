@@ -5,15 +5,14 @@ public class Badeline : NPC
 {
 	public const string TALK_FLAG = "BADELINE";
 
+	private enum States { Idle, Moving, PurpleOrbLaunch };
+	private States state = States.Idle;
 	private readonly Hair hair;
 	private Color hairColor = 0x9B3FB5;
-
-	private Routine routine = new();
+	private readonly Routine routine = new();
 
     public Badeline() : base(Assets.Models["badeline"])
 	{
-		Model.Play("Bad.Idle");
-
 		foreach (var mat in Model.Materials)
 		{
 			if (mat.Name == "Hair")
@@ -33,6 +32,7 @@ public class Badeline : NPC
 
         InteractHoverOffset = new Vec3(0, -2, 16);
 		InteractRadius = 32;
+		DefaultPushoutRadius = PushoutRadius;
 	}
 
     public override void Update()
@@ -40,9 +40,22 @@ public class Badeline : NPC
         base.Update();
 		
 		// update model
-		Model.Transform = 
+		if (state == States.Idle)
+		{
+			Model.Transform = 
 			Matrix.CreateScale(3) * 
 			Matrix.CreateTranslation(0, 0, MathF.Sin(World.GeneralTimer * 2) * 1.0f - 1.5f);
+			Model.Play("Bad.Idle");
+			InteractEnabled = true;
+		}
+		else
+		{
+			Model.Transform = Matrix.CreateScale(3);
+			InteractEnabled = false;
+		}
+
+		if (state == States.PurpleOrbLaunch)
+			StPurpleOrbLaunchUpdate();
 
 		// update hair
 		{
@@ -101,6 +114,7 @@ public class Badeline : NPC
 		var origFacing = Facing;
 
 		PushoutRadius = 0;
+		state = States.Moving;
 
 		while (time < MoveTime)
 		{
@@ -111,7 +125,7 @@ public class Badeline : NPC
 			yield return Co.SingleFrame;
 		}
 
-		Visible = false;
+		MakeInvisible();
 		// create cool effect
 		var refill = new Refill(true) { Visible = false, Position = player.Position };
 		World.Add(refill);
@@ -121,6 +135,56 @@ public class Badeline : NPC
 
 		yield return 0.4f;
 		World.Destroy(refill);
+	}
+
+	private PurpleOrb? currentPurpleOrb;
+	private Vec2 purpleOrbDirection;
+	private bool purpleOrbDestroy = false;
+	private float tPurpleOrbLaunch = 0;
+
+	public void PurpleOrbLaunch(PurpleOrb purpleOrb, Vec2 playerFacing, bool destroyAfter = false)
+	{
+		currentPurpleOrb = purpleOrb;
+		purpleOrbDirection = playerFacing.Normalized();
+		PushoutRadius = 0;
+		Position = currentPurpleOrb.Position;
+		Facing = -playerFacing;
+		purpleOrbDestroy = destroyAfter;
+		tPurpleOrbLaunch = 0.5f;
+		state = States.PurpleOrbLaunch;
+	}
+
+	private void StPurpleOrbLaunchUpdate()
+	{
+		if (currentPurpleOrb == null) return;
+		if (tPurpleOrbLaunch > 0)
+			tPurpleOrbLaunch -= Time.Delta;
+		else
+		{
+			MakeInvisible();
+			if (purpleOrbDestroy)
+				World.Destroy(this);
+			state = States.Idle;
+			currentPurpleOrb = null;
+			return;
+		}
+
+		if (tPurpleOrbLaunch > 1)
+			Position = Utils.Approach(Position, currentPurpleOrb.Position + new Vec3(purpleOrbDirection * 5, 0), 40 * World.DeltaTime);
+	}
+
+	private readonly float DefaultPushoutRadius;
+
+	public void MakeInvisible()
+	{
+		Visible = false;
+		PushoutRadius = 0;
+	}
+
+	public void MakeVisible()
+	{
+		Visible = true;
+		PushoutRadius = DefaultPushoutRadius;
 	}
 }
 
