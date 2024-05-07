@@ -100,8 +100,8 @@ public class Overworld : Scene
 					}
 				}
 
-				// C-Side menu
-				if (record.CSideUnlocked) 
+				// C-Side menu, make sure the c-side exists
+				if (record.CSideUnlocked && Assets.Maps.TryGetValue(Level.CSideMap, out var csideMap))
 				{
 					CSides = [];
 					int checkpointIndex = 0, checkpointCount = 0;
@@ -115,7 +115,7 @@ public class Overworld : Scene
 							Focused = false
 						});
 						if (i == 0) CSides[i].Focused = true;
-						var toArray = Assets.Maps[Level.CSideMap]?.Checkpoints.ToArray();
+						var toArray = csideMap.Checkpoints.ToArray();
 						for ( ; checkpointCount < (i + 1) * 4 && checkpointIndex < toArray?.Length; checkpointIndex++) {
 							// Continue button
 							if (checkpointCount == 0)
