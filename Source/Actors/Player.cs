@@ -83,35 +83,6 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 	#region SubClasses
 
-	private class Trail
-	{
-		public readonly Hair Hair;
-		public readonly SkinnedModel Model;
-		public Matrix Transform;
-		public float Percent;
-		public Color Color;
-
-		public Trail()
-		{
-			Model = new(Assets.Models["player"]);
-			Model.Flags = ModelFlags.Transparent;
-			Model.MakeMaterialsUnique();
-			foreach (var mat in Model.Materials)
-			{
-				mat.Texture = Assets.Textures["white"];
-				mat.Effects = 0;
-			}
-
-			Hair = new();
-			foreach (var mat in Hair.Materials)
-			{
-				mat.Texture = Assets.Textures["white"];
-				mat.Effects = 0;
-			}
-			Hair.Flags = ModelFlags.Transparent;
-		}
-	}
-
 	public record struct PlayerSettings(int MaxDashes = 1, bool RefillDashOnGround = true, bool CanDash = true, bool CanVerticalDash = true, bool CanMove = true);
 
 	#endregion
@@ -168,7 +139,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private float drawOrbsEase = 0;
 	private float windHairTimer = 0;
 
-	private readonly List<Trail> trails = [];
+	private readonly TrailSystem trailSystem = new() { FadeTime = 0.5f };
 	private readonly Func<SpikeBlock, bool> spikeBlockCheck;
 	private Color lastDashHairColor;
 
@@ -601,11 +572,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		}
 
 		// trails
-		for (int i = trails.Count - 1; i >= 0; i--)
-		{
-			if (trails[i].Percent < 1)
-				trails[i].Percent += World.DeltaTime / 0.5f;
-		}
+		trailSystem.Update(World.DeltaTime);
 	}
 
 	#endregion
@@ -1424,23 +1391,22 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		}
 	}
 
+	#warning Fix animations
+	// After the new system of trails, player animations are wonky
+	// For example, switching to climb animation should be instant but it takes a while.
 	private void CreateDashtTrail()
 	{
-		Trail? trail = null;
-		foreach (var it in trails)
-			if (it.Percent >= 1)
-			{
-				trail = it;
-				break;
-			}
-		if (trail == null)
-			trails.Add(trail = new());
-
-		trail.Model.SetBlendedWeights(Model.GetBlendedWeights());
-		trail.Hair.CopyState(Hair);
-		trail.Percent = 0.0f;
-		trail.Transform = Model.Transform * Matrix;
-		trail.Color = lastDashHairColor;
+		var trail = trailSystem.CreateTrail(
+			() => {
+				var model = new SkinnedModel(Assets.Models["player"]);
+				var hair = new Hair();
+				return [model, hair];
+			},
+			Model.Transform * Matrix,
+			lastDashHairColor
+		);
+		(trail.Models[0] as SkinnedModel)?.SetBlendedWeights(Model.GetBlendedWeights());
+		(trail.Models[1] as Hair)?.CopyState(Hair);
 	}
 
 	public bool RefillDash(int? amount = null)
@@ -2051,7 +2017,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		velocity = new(0, 0, PurpleOrbLaunchSpeed);
 		RefillDash();
 
-		if (!currentPurpleOrb.IsCutscene)
+		if (!(currentPurpleOrb.IsCutscene))
 		{
 			stateMachine.State = States.Normal;
 			ModelScale = new(.6f, .6f, 1.4f);
@@ -2065,7 +2031,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		// Keep going up until we reach target distance
 		Position = Position.WithXY(currentPurpleOrb.Position.XY());
 		var prevFacing = Facing;
-		while (Position.Z < currentPurpleOrb.CutsceneHeight)
+		while (Position.Z < (currentPurpleOrb.CutsceneHeight))
 		{
 			// Spin
 			Facing = targetFacing = new Vec2(MathF.Cos(Facing.Angle() - MathF.Tau * World.DeltaTime * 3), MathF.Sin(Facing.Angle() - MathF.Tau * World.DeltaTime * 3));
@@ -2499,23 +2465,11 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 				populate.Add((this, Model));
 		}
 
-		foreach (var trail in trails)
+		List<Model> trailPopulate = [];
+		trailSystem.CollectModels(trailPopulate, Matrix);
+		foreach (var model in trailPopulate)
 		{
-			if (trail.Percent >= 1)
-				continue;
-
-			// I HATE this alpha fade out but don't have time to make some kind of full-model fade out effect
-			var alpha = Ease.Cube.Out(Calc.ClampedMap(trail.Percent, 0.5f, 1.0f, 1, 0));
-
-			foreach (var mat in trail.Model.Materials)
-				mat.Color = trail.Color * alpha;
-			trail.Hair.Color = trail.Color * alpha;
-
-			if (Matrix.Invert(Matrix, out var inverse))
-				trail.Model.Transform = trail.Transform * inverse;
-
-			populate.Add((this, trail.Model));
-			populate.Add((this, trail.Hair));
+			populate.Add((this, model));
 		}
 	}
 
