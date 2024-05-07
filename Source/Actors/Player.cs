@@ -1391,9 +1391,6 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		}
 	}
 
-	#warning Fix animations
-	// After the new system of trails, player animations are wonky
-	// For example, switching to climb animation should be instant but it takes a while.
 	private void CreateDashtTrail()
 	{
 		var trail = trailSystem.CreateTrail(

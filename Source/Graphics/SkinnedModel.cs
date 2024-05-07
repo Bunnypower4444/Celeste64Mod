@@ -164,7 +164,7 @@ public class SkinnedModel : Model
 		{
 			var it = playing[i];
 
-			it.Time += Rate * delta ?? Time.Delta;
+			it.Time += Rate * (delta ?? Time.Delta);
 			if (it.Time >= it.Duration)
 			{
 				if (it.Loops)
@@ -174,7 +174,7 @@ public class SkinnedModel : Model
 			}
 
 			if (blendDuration > 0)
-				it.Blend = Calc.Approach(it.Blend, (i == playing.Count - 1 ? 1 : 0), delta ?? Time.Delta / blendDuration);
+				it.Blend = Calc.Approach(it.Blend, (i == playing.Count - 1 ? 1 : 0), (delta ?? Time.Delta) / blendDuration);
 			
 			playing[i] = it;
 		}
