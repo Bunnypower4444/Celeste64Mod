@@ -71,7 +71,17 @@
 
 @PointClass size(-16 -16 -16, 16 16 16) = PurpleOrb : "Bounces player up"
 [
-	target(string) : "If set, the purple orb will be a cutscene and the cutscene will finish when the player reaches the node's Z position"
+	target(string) : "Name of the next PurpleOrbNode (optional)"
+	autoContinueTriggerID(string) : "ID of auto-continue AreaTrigger (optional)" : : "If set, the PurpleOrb will move to the next node when the trigger is entered"
+	cutsceneTarget(string) : "Cutscene node" : : "If set, the purple orb will be a cutscene and the cutscene will finish when the player reaches the node's Z position"
+]
+
+@PointClass size(-16 -16 -16, 16 16 16) = PurpleOrbNode : "A path node for purple orbs"
+[
+	targetname(string) : "Name of the node"
+	target(string) : "Name of the next PurpleOrbNode (optional)"
+	autoContinueTriggerID(string) : "ID of auto-continue AreaTrigger (optional)" : : "If set, the PurpleOrb will move to the next node when the trigger is entered"
+	cutsceneTarget(string) : "Cutscene node" : : "If set, the purple orb will be a cutscene and the cutscene will finish when the player reaches the node's Z position"
 ]
 
 @PointClass size(-16 -16 -16, 16 16 16) = Cassette : "Warps to a B-Side challenge room"

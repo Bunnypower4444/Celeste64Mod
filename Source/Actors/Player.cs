@@ -2001,6 +2001,10 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			stateMachine.State = States.Normal;
 			yield break;
 		}
+
+		// store data about the orb now in case the CurrentNode changes
+		var isCutscene = currentPurpleOrb.CurrentNode?.IsCutscene ?? false;
+		var cutsceneHeight = currentPurpleOrb.CurrentNode?.CutsceneHeight ?? float.NegativeInfinity;
 		
 		Vec3 vel = (currentPurpleOrb.Position + Vec3.UnitZ * 10 - Position) * 4;
 		while (World.GameSpeed > 0)
@@ -2014,7 +2018,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		velocity = new(0, 0, PurpleOrbLaunchSpeed);
 		RefillDash();
 
-		if (!(currentPurpleOrb.IsCutscene))
+		if (!isCutscene)
 		{
 			stateMachine.State = States.Normal;
 			ModelScale = new(.6f, .6f, 1.4f);
@@ -2028,7 +2032,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		// Keep going up until we reach target distance
 		Position = Position.WithXY(currentPurpleOrb.Position.XY());
 		var prevFacing = Facing;
-		while (Position.Z < (currentPurpleOrb.CutsceneHeight))
+		while (Position.Z < cutsceneHeight)
 		{
 			// Spin
 			Facing = targetFacing = new Vec2(MathF.Cos(Facing.Angle() - MathF.Tau * World.DeltaTime * 3), MathF.Sin(Facing.Angle() - MathF.Tau * World.DeltaTime * 3));

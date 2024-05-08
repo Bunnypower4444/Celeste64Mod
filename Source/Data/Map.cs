@@ -48,12 +48,36 @@ public class Map
 		["Cassette"] = new((map, entity) => new Cassette(entity.GetStringProperty("map", string.Empty))),
 		["Coin"] = new((map, entity) => new Coin()),
 		["Feather"] = new((map, entity) => new Feather()),
-		["PurpleOrb"] = new((map, entity) => 
+		["PurpleOrb"] = new((Map map, SledgeEntity entity) => 
 		{
-			if (map.FindTargetNode(entity.GetStringProperty("target", string.Empty), out var point))
-				return new PurpleOrb(point.Z);
-			else
-				return new PurpleOrb();
+			// Create the list of nodes
+			List<PurpleOrb.PathNode> pathNodes = [];
+			// The first node is the entity itself
+			pathNodes.Add(new(
+				Vec3.Transform(entity.GetVectorProperty("origin", Vec3.Zero), map.baseTransform),
+				entity.GetStringProperty("autoContinueTriggerID", null),
+				map.FindTargetNode(entity.GetStringProperty("cutsceneTarget", string.Empty), out var pos) ? pos.Z : null
+			));
+
+			// Follow the node chain
+			SledgeEntity node = entity;
+			while (true)
+			{
+				var target = node.GetStringProperty("target", string.Empty);
+				if (target != string.Empty &&
+					map.FindTargetEntity(map.Data.Worldspawn, target) is {} targetNode)
+				{
+					node = targetNode;
+					pathNodes.Add(new(
+						Vec3.Transform(node.GetVectorProperty("origin", Vec3.Zero), map.baseTransform),
+						node.GetStringProperty("autoContinueTriggerID", null),
+						map.FindTargetNode(node.GetStringProperty("cutsceneTarget", string.Empty), out var nodePos) ? nodePos.Z : null
+					));
+				}
+				else break;
+			}
+
+			return new PurpleOrb(pathNodes);
 		}),
 		["MovingBlock"] = new((map, entity) =>
 		{
