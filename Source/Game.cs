@@ -22,6 +22,7 @@ public struct Transition
 	public bool StopMusic;
 	public bool PerformAssetReload;
 	public float HoldOnBlackFor;
+	public Color? Color;
 	public Action? Callback;
 }
 
@@ -105,6 +106,11 @@ public class Game : Module
 			transitionStep == TransitionStep.FadeIn);
 		transition = next;
 		transitionStep = scenes.Count > 0 ? TransitionStep.FadeOut : TransitionStep.Perform;
+		
+		if (transition.ToBlack != null)
+			transition.ToBlack.Color = next.Color ?? Color.Black;
+		if (transition.FromBlack != null)
+			transition.FromBlack.Color = next.Color ?? Color.Black;
 		transition.ToBlack?.Restart(transitionStep != TransitionStep.FadeOut);
 
 		if (transition.StopMusic)
@@ -296,7 +302,7 @@ public class Game : Module
 
 	public override void Render()
 	{
-		Graphics.Clear(Color.Black);
+		Graphics.Clear(transitionStep != TransitionStep.None && transition.Color.HasValue ? transition.Color.Value : Color.Black);
 
 		if (transitionStep != TransitionStep.Perform && transitionStep != TransitionStep.Hold)
 		{
@@ -320,11 +326,6 @@ public class Game : Module
 				batcher.Render();
 				batcher.Clear();
 			}
-		}
-		// If the color of the screenwipe is not black  (like with the SnowWipe)
-		else if (transition.ToBlack?.CustomColor != null)
-		{
-			Graphics.Clear((Color)transition.ToBlack.CustomColor);
 		}
 	}
 

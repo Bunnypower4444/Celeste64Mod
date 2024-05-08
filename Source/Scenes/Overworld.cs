@@ -750,7 +750,8 @@ public class Overworld : Scene
 					ToBlack = new SnowWipe(),
 					StopMusic = true,
 					HoldOnBlackFor = 1.5f,
-					FromPause = false
+					FromPause = false,
+					Color = Color.White
 				});
 			}
 		}

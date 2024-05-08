@@ -17,7 +17,7 @@ public class SlideWipe : ScreenWipe
 	{
 		if ((Percent <= 0 && IsFromBlack) || (Percent >= 1 && !IsFromBlack))
 		{
-			batch.Rect(bounds, Color.Black);
+			batch.Rect(bounds, Color);
 			return;
 		}
 
@@ -34,6 +34,6 @@ public class SlideWipe : ScreenWipe
 			rect.TopRight,
 			rect.BottomRight + new Vec2(-shift, 0),
 			rect.BottomLeft,
-			Color.Black);
+			Color);
 	}
 }

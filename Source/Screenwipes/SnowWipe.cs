@@ -25,6 +25,8 @@ public class SnowWipe : ScreenWipe
 		public bool Stopped = fromBlack;
 		public readonly bool FromBlack = fromBlack;
 
+		public static Color Color;
+
 		public static Snowflake FromStartingPosition(Vec2 startPosition, int radius, Vec2 velocity, bool fromBlack = false)
 		{
 			return new Snowflake(startPosition + velocity * SnowflakeFlyDuration, radius, velocity, fromBlack);
@@ -70,17 +72,15 @@ public class SnowWipe : ScreenWipe
 
 		public void Render(Batcher batch, Rect bounds)
 		{
-			batch.Circle(GetActualPosition(bounds) + new Vec2(0, Wobble * bounds.Height / 40), ActualRadius, 12, Color.White * Alpha);
+			batch.Circle(GetActualPosition(bounds) + new Vec2(0, Wobble * bounds.Height / 40), ActualRadius, 12, Color * Alpha);
 		}
 	};
 
-	public SnowWipe() : base(Duration)
-	{
-		CustomColor = Color.White;
-	}
+	public SnowWipe() : base(Duration) {}
 
 	public override void Start()
 	{
+		Snowflake.Color = Color;
         // TODO add snow/wind sound effect
 		if (IsFromBlack)
 		{
@@ -146,11 +146,11 @@ public class SnowWipe : ScreenWipe
 	{
 		if ((Percent <= 0 && IsFromBlack) || (Percent >= 1 && !IsFromBlack))
 		{
-			batch.Rect(bounds, Color.White);
+			batch.Rect(bounds, Color);
 			return;
 		}
 
-		batch.Rect(bounds, Color.White * (IsFromBlack ? Ease.Quint.In(1 - Percent) : Ease.Quint.In(Percent)));
+		batch.Rect(bounds, Color * (IsFromBlack ? Ease.Quint.In(1 - Percent) : Ease.Quint.In(Percent)));
 
 		batch.PushMatrix(Matrix3x2.CreateTranslation(bounds.TopLeft));
 		foreach (var snowflake in snowflakes) {

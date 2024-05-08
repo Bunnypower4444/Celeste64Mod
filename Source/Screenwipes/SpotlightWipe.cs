@@ -31,7 +31,7 @@ public class SpotlightWipe : ScreenWipe
 	{
 		if ((Percent <= 0 && IsFromBlack) || (Percent >= 1 && !IsFromBlack))
 		{
-			batch.Rect(bounds, Color.Black);
+			batch.Rect(bounds, Color);
 			return;
 		}
 
@@ -54,10 +54,10 @@ public class SpotlightWipe : ScreenWipe
 		else
 			radius = Ease.Cube.InOut(ease) * bounds.Width;
 
-		DrawSpotlight(batch, point, radius);
+		DrawSpotlight(batch, point, radius, Color);
 	}
 
-	public static void DrawSpotlight(Batcher batch, Vec2 position, float radius)
+	public static void DrawSpotlight(Batcher batch, Vec2 position, float radius, Color color)
 	{
 		var lastAngle = new Vec2(1, 0);
 		var steps = 256;
@@ -72,13 +72,13 @@ public class SpotlightWipe : ScreenWipe
 					position + lastAngle * 5000,
 					position + lastAngle * radius,
 					position + nextAngle * radius,
-					Color.Black);
+					color);
 
 				batch.Triangle(
 					position + lastAngle * 5000,
 					position + nextAngle * 5000,
 					position + nextAngle * radius,
-					Color.Black);
+					color);
 			}
 
 			lastAngle = nextAngle;

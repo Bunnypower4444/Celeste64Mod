@@ -28,7 +28,7 @@ public class AngledWipe : ScreenWipe
 	{
 		if ((Percent <= 0 && IsFromBlack) || (Percent >= 1 && !IsFromBlack))
 		{
-			batch.Rect(bounds, Color.Black);
+			batch.Rect(bounds, Color);
 			return;
 		}
 
@@ -80,7 +80,7 @@ public class AngledWipe : ScreenWipe
 		batch.PushMatrix(bounds.TopLeft);
 		for (int i = 0; i < triangles.Length; i += 3)
 		{
-			batch.Triangle(triangles[i], triangles[i + 1], triangles[i + 2], Color.Black);
+			batch.Triangle(triangles[i], triangles[i + 1], triangles[i + 2], Color);
 		}
 		batch.PopMatrix();
 	}
