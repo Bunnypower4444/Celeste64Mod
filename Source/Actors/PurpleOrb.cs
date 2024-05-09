@@ -66,7 +66,7 @@ public class PurpleOrb : Actor, IHaveSprites, IPickup, IHaveModels, ICastPointSh
 				AreaTrigger.GetAreaTrigger(World, node.AutoContinueTriggerID) is {} areaTrigger)
 			{
 				var thisIndex = i;
-                void action(AreaTrigger trigger)
+                void action(AreaTrigger trigger, Player _)
                 {
 					if (nodeIndex <= thisIndex)
 					{
