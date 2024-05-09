@@ -302,7 +302,7 @@ public class Game : Module
 
 	public override void Render()
 	{
-		Graphics.Clear(transitionStep != TransitionStep.None && transition.Color.HasValue ? transition.Color.Value : Color.Black);
+		Graphics.Clear((transitionStep is TransitionStep.Perform or TransitionStep.Hold && transition.Color.HasValue) ? transition.Color.Value : Color.Black);
 
 		if (transitionStep != TransitionStep.Perform && transitionStep != TransitionStep.Hold)
 		{

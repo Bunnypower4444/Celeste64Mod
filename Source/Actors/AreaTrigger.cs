@@ -1,4 +1,6 @@
 
+using TriggerAction = System.Action<Celeste64.AreaTrigger, Celeste64.Player>;
+
 namespace Celeste64;
 
 /// <summary>
@@ -6,12 +8,12 @@ namespace Celeste64;
 /// </summary>
 public class AreaTrigger(string id) : Actor
 {
-    private readonly List<Action<AreaTrigger>> enterActions = [];
-    private readonly List<Action<AreaTrigger>> inTriggerActions = [];
-    private readonly List<Action<AreaTrigger>> exitActions = [];
-    private readonly List<Action<AreaTrigger>> removedEnterActions = [];
-    private readonly List<Action<AreaTrigger>> removedInTriggerActions = [];
-    private readonly List<Action<AreaTrigger>> removedExitActions = [];
+    private readonly List<TriggerAction> enterActions = [];
+    private readonly List<TriggerAction> inTriggerActions = [];
+    private readonly List<TriggerAction> exitActions = [];
+    private readonly List<TriggerAction> removedEnterActions = [];
+    private readonly List<TriggerAction> removedInTriggerActions = [];
+    private readonly List<TriggerAction> removedExitActions = [];
     public readonly string ID = id;
     public bool PlayerIsInTrigger => World.Get<Player>() is {} player && WorldBounds.Contains(player.Position);
     public bool PlayerWasInTrigger { get; private set; } = false;
@@ -21,17 +23,17 @@ public class AreaTrigger(string id) : Actor
         return world.All<AreaTrigger>().Find(actor => actor is AreaTrigger areaTrigger && areaTrigger.ID == id) as AreaTrigger;
     }
 
-    public void AddEnterAction(Action<AreaTrigger> action)
+    public void AddEnterAction(TriggerAction action)
     {
         enterActions.Add(action);
     }
 
-    public void AddInTriggerAction(Action<AreaTrigger> action)
+    public void AddInTriggerAction(TriggerAction action)
     {
         inTriggerActions.Add(action);
     }
 
-    public void AddExitAction(Action<AreaTrigger> action)
+    public void AddExitAction(TriggerAction action)
     {
         exitActions.Add(action);
     }
@@ -41,7 +43,7 @@ public class AreaTrigger(string id) : Actor
     /// </summary>
     /// <param name="action">The action to be removed.</param>
     /// <returns>True if the action was successfully removed; otherwise, false.</returns>
-    public bool RemoveEnterAction(Action<AreaTrigger> action)
+    public bool RemoveEnterAction(TriggerAction action)
     {
         if (enterActions.Contains(action))
         {
@@ -56,7 +58,7 @@ public class AreaTrigger(string id) : Actor
     /// </summary>
     /// <param name="action">The action to be removed.</param>
     /// <returns>True if the action was successfully removed; otherwise, false.</returns>
-    public bool RemoveInTriggerAction(Action<AreaTrigger> action)
+    public bool RemoveInTriggerAction(TriggerAction action)
     {
         if (inTriggerActions.Contains(action))
         {
@@ -71,7 +73,7 @@ public class AreaTrigger(string id) : Actor
     /// </summary>
     /// <param name="action">The action to be removed.</param>
     /// <returns>True if the action was successfully removed; otherwise, false.</returns>
-    public bool RemoveExitAction(Action<AreaTrigger> action)
+    public bool RemoveExitAction(TriggerAction action)
     {
         if (exitActions.Contains(action))
         {
@@ -81,27 +83,27 @@ public class AreaTrigger(string id) : Actor
         return false;
     }
 
-    public void RunEnterActions()
+    public void RunEnterActions(Player player)
     {
         foreach (var action in enterActions)
         {
-            action(this);
+            action(this, player);
         }
     }
 
-    public void RunInTriggerActions()
+    public void RunInTriggerActions(Player player)
     {
         foreach (var action in inTriggerActions)
         {
-            action(this);
+            action(this, player);
         }
     }
 
-    public void RunExitActions()
+    public void RunExitActions(Player player)
     {
         foreach (var action in exitActions)
         {
-            action(this);
+            action(this, player);
         }
     }
 
@@ -109,12 +111,13 @@ public class AreaTrigger(string id) : Actor
     {
         base.LateUpdate();
         var inTrigger = PlayerIsInTrigger;
+        var player = World.Get<Player>();
         if (inTrigger)
         {
-            if (!PlayerWasInTrigger) RunEnterActions();
-            RunInTriggerActions();
+            if (!PlayerWasInTrigger) RunEnterActions(player!);
+            RunInTriggerActions(player!);
         }
-        else if (!inTrigger && PlayerWasInTrigger) RunExitActions();
+        else if (!inTrigger && PlayerWasInTrigger) RunExitActions(player!);
 
         PlayerWasInTrigger = inTrigger;
 
