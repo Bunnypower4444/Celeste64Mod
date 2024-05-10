@@ -1,7 +1,9 @@
 # Celeste 64: Fragments of the Mountain
-This is the source code and general information for *Celeste 64: Fragments of the Mountain*, a game made by the original Celeste developers in under 2 weeks for Celeste's 6th Anniversary. We haven't done a lot of 3D development so much of this is not very optimized, it's coded in libraries mostly intended for 2D games, and we put it all together very, very quickly. Consider this similar to a weekend jam game, so experiment and learn at your own risk!  
+This is a mod for *Celeste 64: Fragments of the Mountain*, with a bunch of my ideas for improving and adding to the game as well as custom levels. Such features range from new gameplay objects, like purple orbs or wind, to general quality of life changes, like being able to start from any reached checkpoint.
 
-You can find prebuilt version of the game on [itch.io](https://maddymakesgamesinc.itch.io/celeste64).
+You can find the FitnessGram™ Pacer Test mod in the [pacer-test](https://github.com/Bunnypower4444/Celeste64Mod/tree/pacer-test) branch.
+
+A custom level (Forsaken City C-Side) is in progress.
 
 ### Installation
  - You need [.NET 8.0](https://dotnet.microsoft.com/en-us/download/dotnet/8.0)
