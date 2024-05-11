@@ -1,10 +1,11 @@
 
 namespace Celeste64;
 
-public class DoubleDashPuzzleBlock : Solid, IUnlockStrawberry, IHaveSprites
+public class DashPuzzleBlock(int dashes) : Solid, IUnlockStrawberry, IHaveSprites
 {
     public bool Satisfied { get; private set; }
 
+	private readonly int dashes = dashes;
 	private bool ready = false;
 	private float pulse = 0;
 	private Color pulseColor;
@@ -24,7 +25,7 @@ public class DoubleDashPuzzleBlock : Solid, IUnlockStrawberry, IHaveSprites
     {
 		base.Update();
 
-		if (!Satisfied && !ready && World.Get<Player>() is {} player && player.Dashes >= 2 && HasPlayerRider())
+		if (!Satisfied && !ready && World.Get<Player>() is {} player && player.Dashes == dashes && player.MaxDashes <= dashes && HasPlayerRider())
 		{
 			pulseColor = player.Hair.Color;
 			ready = true;

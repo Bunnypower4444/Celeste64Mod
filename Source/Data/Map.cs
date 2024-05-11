@@ -120,7 +120,7 @@ public class Map
 				entity.GetIntProperty("secret", 0) != 0);
 		}) { IsSolidGeometry = true },
 		["CassetteBlock"] = new((map, entity) => new CassetteBlock(entity.GetIntProperty("startOn", 1) != 0)) { IsSolidGeometry = true },
-		["DoubleDashPuzzleBlock"] = new((map, entity) => new DoubleDashPuzzleBlock()) { IsSolidGeometry = true },
+		["DashPuzzleBlock"] = new((map, entity) => new DashPuzzleBlock(entity.GetIntProperty("dashes", 2))) { IsSolidGeometry = true },
 		["EndingArea"] = new((map, entity) => new EndingArea()) { UseSolidsAsBounds = true },
 		["AreaTrigger"] = new((map, entity) => new AreaTrigger(entity.GetStringProperty("id", string.Empty))) { UseSolidsAsBounds = true },
 		["Fog"] = new((map, entity) => new FogRing(entity)),
