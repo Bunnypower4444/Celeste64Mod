@@ -135,7 +135,7 @@
 
 @SolidClass = DashPuzzleBlock : "Stand on with the correct amount of dashes to activate"
 [
-	dashes(integer) : "Number of dashes required" : 2 : "This will not activate if the player's MAXIMUM dash count is greater than the required count (i.e. If you have 2 dashes by default, you can't activate a 1-dash platform even if you currently have 1 dash)
+	dashes(integer) : "Number of dashes required" : 2 : "This will not activate if the player's MAXIMUM dash count is greater than the required count (i.e. If you have 2 dashes by default, you can't activate a 1-dash platform even if you currently have 1 dash)"
 ]
 
 @SolidClass = DeathBlock : "Invisible; Kills the Player when hit"
