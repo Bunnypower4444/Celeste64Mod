@@ -27,6 +27,10 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private const float JumpXYBoost = 10;
 	private const float CoyoteTime = .12f;
 	private const float WallJumpXYSpeed = MaxSpeed * 1.3f;
+	private const float SuperWallJumpExtraTime = 0.1f;
+	private const float SuperWallJumpSpeed = 140;
+	private const float SuperWallJumpXYSpeed = MaxSpeed * 1.5f;
+	private const float SuperWallJumpHoldTime = 0.2f;
 
 	private const float DashSpeed = 140;
 	private const float DashEndSpeedMult = .75f;
@@ -332,6 +336,8 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 				tGroundSnapCooldown -= World.DeltaTime;
 			if (tClimbCooldown > 0)
 				tClimbCooldown -= World.DeltaTime;
+			if (tSuperWallJumpExtraTime > 0)
+				tSuperWallJumpExtraTime -= World.DeltaTime;
 
 			if (World.Wind != Vec3.Zero)
 				windHairTimer += World.DeltaTime;
@@ -803,6 +809,31 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		Audio.Play(Sfx.sfx_jump_wall, Position);
 	}
 
+	private void SuperWallJump()
+	{
+		holdJumpSpeed = velocity.Z = SuperWallJumpSpeed;
+		tHoldJump = SuperWallJumpHoldTime;
+		autoJump = false;
+
+		var velXY = targetFacing * SuperWallJumpXYSpeed;
+		// Rotate based on vertical dash direction
+		var lastDashXY = lastDashDirection.XY();
+		if (lastDashXY != Vec2.Zero)
+		{
+			const float Angle = MathF.PI / 3;
+			velXY += SuperWallJumpSpeed * lastDashXY.Normalized() * MathF.Cos(Angle);
+			holdJumpSpeed = velocity.Z = SuperWallJumpSpeed * MathF.Sin(Angle);
+		}
+		velocity = velocity.WithXY(velXY);
+
+		AddPlatformVelocity(false);
+		CancelGroundSnap();
+
+		ModelScale = new(.6f, .6f, 1.4f);
+		Audio.Play(Sfx.sfx_jump_wall, Position);
+		Audio.Play(Sfx.sfx_jump_superslide, Position);
+	}
+
 	private void SkidJump()
 	{
 		Position = Position with { Z = coyoteZ };
@@ -942,6 +973,24 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			return false;
 	}
 
+	private bool SuperWallJumpCheck()
+	{
+		if (Settings.CanMove && Controls.Jump.Pressed 
+		&& World.SolidWallCheckClosestToNormal(SolidWaistTestPos, ClimbCheckDist * 1.25f, -new Vec3(targetFacing, 0), out var hit))
+		{
+			// check if the dash was either straight up or up and perpendicular to wall normal
+			var lastDashXY = lastDashDirection.XY();
+			if (lastDashXY != Vec2.Zero && MathF.Abs(Vec2.Dot(hit.Normal.XY().Normalized(), lastDashXY.Normalized())) > 0.3f)
+				return false;
+			Controls.Jump.ConsumePress();
+			Position += (hit.Pushout * (WallPushoutDist / ClimbCheckDist));
+			targetFacing = hit.Normal.XY().Normalized();
+			return true;
+		}
+		else
+			return false;
+	}
+
 	private void BreakBlock(BreakBlock block, Vec3 direction)
 	{
 		World.HitStun = 0.1f;
@@ -1032,6 +1081,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private bool autoJump;
 	private float tNoMove;
 	private float tFootstep;
+	private float tSuperWallJumpExtraTime;
 
 	private void StNormalEnter()
 	{
@@ -1238,8 +1288,10 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		// jump & gravity
 		if (tCoyote > 0 && Settings.CanMove && Controls.Jump.ConsumePress())
 			Jump();
+		else if (tSuperWallJumpExtraTime > 0 && SuperWallJumpCheck())
+			SuperWallJump();
 		else if (WallJumpCheck())
-			WallJump();
+				WallJump();
 		else
 		{
 			if (tHoldJump > 0 && (autoJump || (Settings.CanMove && Controls.Jump.Down)))
@@ -1308,7 +1360,10 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private float tDashResetCooldown;
 	private float tDashResetFlash;
 	private float tNoDashJump;
+	private float tNoSuperWallJump;
 	private bool dashedOnGround;
+	private bool dashedUp;
+	private Vec3 lastDashDirection;
 	private int dashTrailsCreated;
 
 	private bool TryDash()
@@ -1330,12 +1385,15 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 		lastDashHairColor = dashes <= 0 ? CNoDash : CNormal;
 		dashedOnGround = onGround;
+		dashedUp = Controls.Climb.Down && Settings.CanVerticalDash;
 		SetDashSpeed(targetFacing);
+		lastDashDirection = velocity;
 		autoJump = true;
 
 		tDash = DashTime;
 		tDashResetCooldown = DashResetCooldown;
 		tNoDashJump = .1f;
+		tNoSuperWallJump = .1f;
 		dashTrailsCreated = 0;
 
 		World.HitStun = .02f;
@@ -1351,6 +1409,8 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private void StDashingExit()
 	{
 		tDashCooldown = DashCooldown;
+		if (dashedUp)
+			tSuperWallJumpExtraTime = SuperWallJumpExtraTime;
 		CreateDashtTrail();
 	}
 
@@ -1381,12 +1441,23 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 		if (tNoDashJump > 0)
 			tNoDashJump -= World.DeltaTime;
+		if (tNoSuperWallJump > 0)
+			tNoSuperWallJump -= World.DeltaTime;
 
 		// dash jump
 		if (dashedOnGround && tCoyote > 0 && tNoDashJump <= 0 && Settings.CanMove && Controls.Jump.ConsumePress())
 		{
 			stateMachine.State = States.Normal;
 			DashJump();
+			return;
+		}
+
+		// super wall jump (wall bounce)
+		if (dashedUp && tNoSuperWallJump <= 0 && Settings.CanMove && SuperWallJumpCheck())
+		{
+			stateMachine.State = States.Normal;
+			tClimbCooldown = 0.3f;
+			SuperWallJump();
 			return;
 		}
 	}
@@ -1422,7 +1493,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private void SetDashSpeed(in Vec2 dir)
 	{
 		// Vertical dashing
-		if (Controls.Climb.Down && Settings.CanVerticalDash)
+		if (dashedUp)
 		{
 			if (RelativeMoveInput != Vec2.Zero)
 				velocity = new Vec3(dir, 1).Normalized() * DashSpeed;
@@ -1550,14 +1621,19 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		{
 			stateMachine.State = States.Normal;
 			targetFacing = -targetFacing;
-			WallJump();
+			// check if the dash was either straight up or up and perpendicular to wall normal
+			var lastDashXY = lastDashDirection.XY();
+			if (tSuperWallJumpExtraTime > 0 && (lastDashXY == Vec2.Zero || MathF.Abs(Vec2.Dot(targetFacing.Normalized(), lastDashXY.Normalized())) < 0.3f))
+				SuperWallJump();
+			else
+				WallJump();
 			return;
 		}
 
 		if (dashes > 0 && tDashCooldown <= 0 && Controls.Dash.ConsumePress())
 		{
-			stateMachine.State = States.Dashing;
 			dashes--;
+			stateMachine.State = States.Dashing;
 			return;
 		}
 
@@ -1971,11 +2047,13 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	#region Purple Orb Launch State
 
 	private PurpleOrb? currentPurpleOrb;
+	private Vec2 purpleOrbPrevFacing;
 
 	public void PurpleOrbLaunch(PurpleOrb purpleOrb)
 	{
 		currentPurpleOrb = purpleOrb;
 		stateMachine.State = States.PurpleOrbLaunch;
+		purpleOrbPrevFacing = targetFacing;
 	}
 
 	private void StPurpleOrbLaunchEnter()
@@ -1987,6 +2065,7 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 	private void StPurpleOrbLaunchExit()
 	{
 		currentPurpleOrb = null;
+		Facing = targetFacing = purpleOrbPrevFacing;
 	}
 
 	private void StPurpleOrbLaunchUpdate()
@@ -2007,10 +2086,19 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 		var cutsceneHeight = currentPurpleOrb.CurrentNode?.CutsceneHeight ?? float.NegativeInfinity;
 		
 		Vec3 vel = (currentPurpleOrb.Position + Vec3.UnitZ * 10 - Position) * 4;
+		if (isCutscene)
+			cameraOverride = new(World.Camera.Position, World.Camera.LookAt);
+		else
+			cameraOverride = null;
 		while (World.GameSpeed > 0)
 		{
 			Calc.Approach(ref World.GameSpeed, 0, Time.Delta / PurpleOrbStartTime);
 			Position = Utils.Approach(Position, currentPurpleOrb.Position + Vec3.UnitZ * 10, vel.Length() * World.DeltaTime);
+			if (cameraOverride.HasValue)
+				cameraOverride = new(
+					Utils.Approach(cameraOverride.Value.Position, currentPurpleOrb.Position + Vec3.UnitZ * 10, World.DeltaTime * 200),
+					Utils.Approach(cameraOverride.Value.LookAt, currentPurpleOrb.Position + Vec3.UnitZ * 10, World.DeltaTime * 200)
+				);
 			yield return Co.SingleFrame;
 		}
 
@@ -2028,18 +2116,16 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 			autoJump = true;
 			yield break;
 		}
+		cameraOverride = null;
 
 		// Keep going up until we reach target distance
 		Position = Position.WithXY(currentPurpleOrb.Position.XY());
-		var prevFacing = Facing;
 		while (Position.Z < cutsceneHeight)
 		{
 			// Spin
 			Facing = targetFacing = new Vec2(MathF.Cos(Facing.Angle() - MathF.Tau * World.DeltaTime * 3), MathF.Sin(Facing.Angle() - MathF.Tau * World.DeltaTime * 3));
 			yield return Co.SingleFrame;
 		}
-
-		targetFacing = prevFacing;
 		
 		stateMachine.State = States.Normal;
 	}
