@@ -79,6 +79,7 @@ public class Map
 
 			return new PurpleOrb(pathNodes);
 		}),
+		["Spinner"] = new((map, entity) => new Spinner(entity.GetIntProperty("noAttach", 0) > 0)),
 		["MovingBlock"] = new((map, entity) =>
 		{
 			return new MovingBlock(
