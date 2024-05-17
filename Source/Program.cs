@@ -35,7 +35,6 @@ class Program
 		// write error to console in case they can see stdout
 		Console.WriteLine(e?.ToString() ?? string.Empty);
 
-		/*
 		// construct a log message
 		const string ErrorFileName = "ErrorLog.txt";
 		StringBuilder error = new();
@@ -70,6 +69,5 @@ class Program
 		{
 			new Process { StartInfo = new ProcessStartInfo(path) { UseShellExecute = true } }.Start();
 		}
-		*/
 	}
 }
