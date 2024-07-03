@@ -82,17 +82,27 @@ public class Cutscene : Actor, IHaveUI
 		[RightTag] = ">"
 	};
 
+	private static bool GetAttribute(XmlNode node, string attribute, out string result)
+	{
+		if (node.Attributes != null && node.Attributes[attribute] is {} attr)
+		{
+			result = attr.Value;
+			return true;
+		}
+		result = string.Empty;
+		return false;
+	}
+
 	private static bool GetFloatAttribute(XmlNode node, string attribute, out float result)
 	{
 		result = 0;
-		if (node.Attributes != null && node.Attributes[attribute] is {} attr)
+		if (GetAttribute(node, attribute, out var str))
 		{
-			if (float.TryParse(attr.Value, out var value))
+			if (float.TryParse(str, out var value))
 			{
 				result = value;
 				return true;
 			}
-			else throw new Exception($"Invalid float value for attribute '{attribute}' in dialogue delay tag ({attr.Value})");
 		}
 		return false;
 	}
@@ -123,6 +133,20 @@ public class Cutscene : Actor, IHaveUI
 							{
 								if (_delays.ContainsKey(_text.Length)) _delays[_text.Length] += value;
 								else _delays[_text.Length] = value;
+							}
+							else throw new Exception($"Invalid float value for attribute '{DelayTimeAttribute}' in dialogue delay tag");
+						}
+
+						if (child.Name == ColorTag)
+						{
+							if (GetAttribute(child, ColorAttribute, out var value))
+							{
+								// built-in color names
+								if (value[0] != '#' && ColorTheme.GetColor(value) is {} color)
+									child.Attributes![ColorAttribute]!.Value = color.ToHexStringRGB();
+								// remove hashtag
+								else if (value[0] == '#')
+									child.Attributes![ColorAttribute]!.Value = value[1..];
 							}
 						}
 						break;

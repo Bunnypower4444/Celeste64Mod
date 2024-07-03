@@ -579,7 +579,7 @@
 			{
 				"Face": "baddy/UncertainB",
 				"Voice": "madeline/baddy3_04_m2",
-				"Text": "There are still so many\n<c color=\"f02943\">alternate sides</c> of this one place..."
+				"Text": "There are still so many\n<c color=\"madeline\">alternate sides</c> of this one place..."
 			},
 			{
 				"Face": "baddy/UncertainB",
@@ -614,7 +614,7 @@
 				"EndDialogue": true
 			}
 		],
-		"Baddy1C1": [
+		"Baddy1C-1": [
 			{
 				"Face": "baddy/UncertainA",
 				"Voice": "badeline/baddy3_02_b2",
@@ -633,6 +633,32 @@
 				"Face": "madeline/Upset",
 				"Voice": "madeline/granny2_02_m1",
 				"Text": "Come on, let's get going."
+			}
+		],
+		"Baddy1C-2": [
+			{
+				"Face": "baddy/UncertainA",
+				"Voice": "badeline/baddy3_02_b2",
+				"Text": "Are you <wavy>really</wavy> sure about this?"
+			},
+			{
+				"Face": "baddy/UncertainB",
+				"Voice": "badeline/baddy1_04_b2",
+				"Text": "This... <d time=\"0.25\" /> this place is giving me a bad feeling..."
+			},
+			{
+				"Face": "madeline/Angry",
+				"Text": "..."
+			},
+			{
+				"Face": "madeline/Angry",
+				"Voice": "madeline/granny2_02_m1",
+				"Text": "Are you going to help me or not?"
+			},
+			{
+				"Face": "baddy/Angry",
+				"Voice": "badeline/baddy1_10_b5",
+				"Text": "<c color=\"madeline\">Madeline</c>, please, this is too dangerous."
 			}
 		],
 		"BaddyBaller": [

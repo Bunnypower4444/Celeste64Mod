@@ -23,19 +23,46 @@ public class AreaTrigger(string id) : Actor
         return world.All<AreaTrigger>().Find(actor => actor is AreaTrigger areaTrigger && areaTrigger.ID == id) as AreaTrigger;
     }
 
-    public void AddEnterAction(TriggerAction action)
+    public void AddEnterAction(TriggerAction action, bool isOneShot = false)
     {
-        enterActions.Add(action);
+        if (isOneShot)
+        {
+            void autoRemove(AreaTrigger trigger, Player player) {
+                action(trigger, player);
+                trigger.RemoveEnterAction(autoRemove);
+            };
+            enterActions.Add(autoRemove);
+        }
+        else
+            enterActions.Add(action);
     }
 
-    public void AddInTriggerAction(TriggerAction action)
+    public void AddInTriggerAction(TriggerAction action, bool isOneShot = false)
     {
-        inTriggerActions.Add(action);
+        if (isOneShot)
+        {
+            void autoRemove(AreaTrigger trigger, Player player) {
+                action(trigger, player);
+                trigger.RemoveInTriggerAction(autoRemove);
+            };
+            inTriggerActions.Add(autoRemove);
+        }
+        else
+            inTriggerActions.Add(action);
     }
 
-    public void AddExitAction(TriggerAction action)
+    public void AddExitAction(TriggerAction action, bool isOneShot = false)
     {
-        exitActions.Add(action);
+        if (isOneShot)
+        {
+            void autoRemove(AreaTrigger trigger, Player player) {
+                action(trigger, player);
+                trigger.RemoveExitAction(autoRemove);
+            };
+            exitActions.Add(autoRemove);
+        }
+        else
+            exitActions.Add(action);
     }
 
     /// <summary>

@@ -100,8 +100,10 @@ public class Player : Actor, IHaveModels, IHaveSprites, IRidePlatforms, ICastPoi
 
 	private PlayerSettings settings;
 	public PlayerSettings Settings { get => settings; set {
+		var prevMaxDashes = MaxDashes;
 		settings = value;
-		dashes = settings.MaxDashes;
+		if (prevMaxDashes != MaxDashes)
+			dashes = MaxDashes;
 	}}
 
 	public bool Dead = false;

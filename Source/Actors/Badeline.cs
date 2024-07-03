@@ -5,11 +5,18 @@ public class Badeline : NPC
 {
 	public const string TALK_FLAG = "BADELINE";
 
-	private enum States { Idle, Moving, PurpleOrbLaunch };
+	private enum States { Idle, Moving, Disappearing, PurpleOrbLaunch };
 	private States state = States.Idle;
 	private readonly Hair hair;
 	private Color hairColor = 0x9B3FB5;
 	private readonly Routine routine = new();
+	private readonly ParticleSystem particleSystem = new(50, new ParticleTheme() {
+		Rate = 1f,
+		Sprite = "particle-star",
+		Life = 0.5f,
+		Gravity = new Vec3(0, 0, 0),
+		Size = 2.5f,
+	});
 
     public Badeline() : base(Assets.Models["badeline"])
 	{
@@ -54,6 +61,24 @@ public class Badeline : NPC
 			InteractEnabled = false;
 		}
 
+		if (state == States.Disappearing)
+		{
+			// Spawn a bunch of particles when she disappears
+			for (int i = 0; i < particleSystem.MaxParticles; i++)
+			{
+				var magnitude = 6 - World.Rng.Float() * 12;
+				particleSystem.SpawnParticle(
+					Position +
+						new Vec3(World.Rng.Float() * 2 - 1, World.Rng.Float() * 2 - 1, World.Rng.Float() * 2 - 1)
+							.Normalized() * magnitude,
+					new Vec3(0, 0, 0), 1 / World.DeltaTime, World.DeltaTime);
+			}
+			
+			state = States.Idle;
+		}
+
+		particleSystem.Update(World.DeltaTime);
+
 		if (state == States.PurpleOrbLaunch)
 			StPurpleOrbLaunchUpdate();
 
@@ -78,7 +103,7 @@ public class Badeline : NPC
 		World.Add(new Cutscene(Conversation));
 	}
 
-	private CoEnumerator Conversation(Cutscene cs)
+	public CoEnumerator Conversation(Cutscene cs)
 	{
 		yield return Co.Run(cs.MoveToDistance(World.Get<Player>(), Position.XY(), 16));
 		yield return Co.Run(cs.FaceEachOther(World.Get<Player>(), this));
@@ -98,7 +123,13 @@ public class Badeline : NPC
         base.CollectModels(populate);
     }
 
-	public void FuseWithMadeline()
+    public override void CollectSprites(List<Sprite> populate)
+    {
+		particleSystem.CollectSprites(Position, World, populate);
+        base.CollectSprites(populate);
+    }
+
+    public void FuseWithMadeline()
 	{
 		var player = World.Get<Player>();
 		if (player == null) return;
@@ -109,7 +140,7 @@ public class Badeline : NPC
 	private CoEnumerator FuseWithMadelineRoutine(Player player)
 	{
 		float time = 0f;
-		const float MoveTime = 1f;
+		const float MoveTime = 0.5f;
 		var origPos = Position;
 		var origFacing = Facing;
 
@@ -119,7 +150,7 @@ public class Badeline : NPC
 		while (time < MoveTime)
 		{
 			time += World.DeltaTime;
-			var ease = Ease.Cube.InOut(time / MoveTime);
+			var ease = Ease.Quad.In(time / MoveTime);
 			Position = Vec3.Lerp(origPos, player.Position, ease);
 			Facing = Vec2.Transform(origFacing, Matrix3x2.CreateRotation((player.Facing.Angle() - origFacing.Angle()) * ease));
 			yield return Co.SingleFrame;
@@ -135,6 +166,47 @@ public class Badeline : NPC
 
 		yield return 0.4f;
 		World.Destroy(refill);
+	}
+
+	public void UnfuseFromMadeline(Vec3 direction)
+	{
+		var player = World.Get<Player>();
+		if (player == null) return;
+
+		MakeVisible();
+		const float UnfuseDistance = 20f;
+		routine.Run(UnfuseFromMadelineRoutine(player, player.Position + direction.Normalized() * UnfuseDistance));
+	}
+
+	private CoEnumerator UnfuseFromMadelineRoutine(Player player, Vec3 pos)
+	{
+		float time = 0f;
+		const float MoveTime = 0.5f;
+		var origPos = player.Position;
+		var origFacing = player.Facing;
+		var targetFacing = (pos - origPos).XY().Normalized();
+
+		PushoutRadius = 0;
+		state = States.Moving;
+		player.Settings = player.Settings with { MaxDashes = 1 };
+
+		while (time < MoveTime)
+		{
+			time += World.DeltaTime;
+			var ease = Ease.Quad.Out(time / MoveTime);
+			Position = Vec3.Lerp(origPos, pos, ease);
+			Facing = Vec2.Transform(origFacing, Matrix3x2.CreateRotation((targetFacing.Angle() - origFacing.Angle()) * ease));
+			yield return Co.SingleFrame;
+		}
+
+		state = States.Idle;
+	}
+
+	public void Disappear()
+	{
+		MakeInvisible();
+		Audio.Play(Sfx.sfx_climb_ledge);
+		state = States.Disappearing;
 	}
 
 	private PurpleOrb? currentPurpleOrb;
@@ -178,12 +250,14 @@ public class Badeline : NPC
 	public void MakeInvisible()
 	{
 		Visible = false;
+		InteractEnabled = false;
 		PushoutRadius = 0;
 	}
 
 	public void MakeVisible()
 	{
 		Visible = true;
+		InteractEnabled = true;
 		PushoutRadius = DefaultPushoutRadius;
 	}
 }

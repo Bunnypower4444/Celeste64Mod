@@ -82,3 +82,32 @@ public static class UI
 		Text(batch, label, new Vec2(pos.X + iconAdvance, pos.Y + size / 2), new Vec2(0, 0.5f), Color.White);
 	}
 }
+
+public static class ColorTheme
+{
+	public static readonly Color Madeline = 0xe64037;
+
+	private static readonly Dictionary<string, Color> colorDict = [];
+
+	// Find all the colors in the ColorTheme and put them into a dictionary so we can
+	// access them using their name as a string
+	static ColorTheme()
+	{
+		var colorThemeType = typeof(ColorTheme);
+		// Get the public static fields
+		var fields = colorThemeType.GetFields(
+			System.Reflection.BindingFlags.Static |
+			System.Reflection.BindingFlags.Public
+		);
+
+		foreach (var field in fields)
+		{
+			// Make sure it is readonly and is a color, then add to dictionary
+			if (field.IsInitOnly && field.GetValue(null) is Color color)
+				colorDict.Add(field.Name.ToLower(), color);
+		}
+	}
+
+	public static Color? GetColor(string name)
+		=> colorDict.TryGetValue(name.ToLower(), out var color) ? color : null;
+}

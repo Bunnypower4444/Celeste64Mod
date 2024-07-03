@@ -97,7 +97,7 @@ public abstract class NPC : Actor, IHaveModels, IHaveSprites, IHavePushout, ICas
 		populate.Add((this, Model));
 	}
 
-	public void CollectSprites(List<Sprite> populate)
+	public virtual void CollectSprites(List<Sprite> populate)
 	{
 		if (showHover)
 		{
