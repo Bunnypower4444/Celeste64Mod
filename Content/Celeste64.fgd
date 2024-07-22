@@ -182,6 +182,17 @@
    target(string) : "Target Node"
 ]
 
+@SolidClass = Room : "Fade out room walls"
+[
+	target(string) : "Name of the room walls to fade out"
+	secret(integer) : "Play secret sound" : 0
+]
+
+@SolidClass = RoomWall : "Walls that fade out when a player enters the room"
+[
+	targetname(string) : "Name of the room this wall is part of"
+]
+
 @PointClass = IntroCar : "Intro Car ............. :)"
 [
 

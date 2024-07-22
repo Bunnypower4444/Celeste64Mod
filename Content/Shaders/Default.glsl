@@ -53,6 +53,8 @@ uniform vec4      u_silhouette_color;
 uniform float     u_time;
 uniform vec4      u_vertical_fog_color;
 uniform float     u_cutout;
+uniform float	  u_roomWallTransparency;
+uniform vec3 	  u_roomWallCenter;
 
 in vec2 v_tex;
 in vec3 v_normal;
@@ -75,6 +77,9 @@ void main(void)
 	float fade = Map(depth, 0.9, 1, 1, 0);
 	vec3  col = src.rgb;
 
+	// fade room walls that are facing away from center
+	fade *= 1 - (u_roomWallTransparency * (-sign(dot(v_normal, u_roomWallCenter - v_world)) + 1) / 2);
+
 	// apply depth values
 	gl_FragDepth = depth;
 
@@ -92,5 +97,8 @@ void main(void)
 	// fade bottom to white
 	col = mix(col, u_vertical_fog_color.rgb * src.a, fall);
 
-	o_color = vec4(col, src.a) * fade;
+	/* if (dot(v_normal, normalize(u_roomWallCenter - v_world)) < 0)
+		o_color = vec4(1, 0, 0, 1);
+	else */
+		o_color = vec4(col, src.a) * fade;
 }

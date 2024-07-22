@@ -55,6 +55,9 @@ public class World : Scene
 	private float strawbCounterEase = 0;
 	private int strawbCounterWas;
 
+	// Used to darken the skybox when entering a room
+	private float inRoomEase = 0;
+
 	private bool IsInEndingArea => Get<Player>() is {} player && Overlaps<EndingArea>(player.Position);
 	private bool IsPauseEnabled
 	{
@@ -363,7 +366,8 @@ public class World : Scene
 			}
 
 			// ONLY update the player when dead
-			if (Get<Player>() is Player player && player.Dead)
+			var player = Get<Player>();
+			if (player != null && player.Dead)
 			{
 				player.Update();
 				player.LateUpdate();
@@ -404,6 +408,11 @@ public class World : Scene
 			foreach (var actor in Actors)
 				if (actor.UpdateOffScreen || actor.WorldBounds.Intersects(view))
 					actor.LateUpdate();
+
+			if (player != null && OverlapsFirst<Room>(player.Position) is Room room)
+				Calc.Approach(ref inRoomEase, 1, DeltaTime * 2);
+			else
+				Calc.Approach(ref inRoomEase, 0, DeltaTime * 2);
 		}
 		// unpause
 		else
@@ -724,9 +733,9 @@ public class World : Scene
 			for (int i = 0; i < skyboxes.Count; i++)
 			{
 				skyboxes[i].Render(Camera, 
-				Matrix.CreateRotationZ(i * GeneralTimer * 0.01f) *
-				Matrix.CreateScale(1, 1, 0.5f) *
-				Matrix.CreateTranslation(shift), 300);
+					Matrix.CreateRotationZ(i * GeneralTimer * 0.01f) *
+					Matrix.CreateScale(1, 1, 0.5f) *
+					Matrix.CreateTranslation(shift), 300, Color.Grayscale((byte)((1 - inRoomEase * 2f / 3f) * 255), 255));
 			}
 		}
 
@@ -769,6 +778,9 @@ public class World : Scene
 			RenderModels(ref state, models, ModelFlags.Transparent);
 			state.DepthMask = true;
 		}
+		
+		// render room walls
+		RenderModels(ref state, models, ModelFlags.RoomWall);
 
 		// strawberry collect effect
 		if (Camera.Target != null && models.Any((it) => it.Model.Flags.Has(ModelFlags.StrawberryGetEffect)))

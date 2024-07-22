@@ -7,6 +7,7 @@ public class Skybox
 	public readonly Texture Texture;
 	private readonly Mesh mesh = new();
 	private readonly Material material = new(Assets.Shaders["Sprite"]);
+	private readonly List<SpriteVertex> verts;
 
 	public Skybox(Texture texture)
 	{
@@ -30,7 +31,7 @@ public class Skybox
 		var v6 = new Vec3(1, 1, -1);
 		var v7 = new Vec3(-1, 1, -1);
 		
-		var verts = new List<SpriteVertex>();
+		verts = [];
 		var indices = new List<int>();
 
 		AddFace(verts, indices, v0, v1, v2, v3, u.TexCoords3, u.TexCoords2, u.TexCoords1, u.TexCoords0);
@@ -57,7 +58,7 @@ public class Skybox
 		indices.Add(n + 0);indices.Add(n + 2);indices.Add(n + 3);
 	}
 
-	public void Render(in Camera camera, in Matrix transform, float size)
+	public void Render(in Camera camera, in Matrix transform, float size, Color color)
 	{
 		var mat = Matrix.CreateScale(size) * transform * camera.ViewProjection;
         if (material.Shader?.Has("u_matrix") ?? false)
@@ -68,6 +69,8 @@ public class Skybox
 		    material.Set("u_far", camera.FarPlane);
         if (material.Shader?.Has("u_texture") ?? false)
 		    material.Set("u_texture", Texture);
+		if (material.Shader?.Has("u_color") ?? false)
+			material.Set("u_color", color);
 
 		DrawCommand cmd = new(camera.Target, mesh, material)
 		{

@@ -126,6 +126,8 @@ public class Map
 		["AreaTrigger"] = new((map, entity) => new AreaTrigger(entity.GetStringProperty("id", string.Empty))) { UseSolidsAsBounds = true },
 		["Fog"] = new((map, entity) => new FogRing(entity)),
 		["FixedCamera"] = new((map, entity) => new FixedCamera(map.FindTargetNodeFromParam(entity, "target"))) { UseSolidsAsBounds = true },
+		["Room"] = new((map, entity) => new Room(entity.GetStringProperty("target", string.Empty), entity.GetIntProperty("secret", 0) > 0)) { UseSolidsAsBounds = true },
+		["RoomWall"] = new((map, entity) => new RoomWall(entity.GetStringProperty("targetname", string.Empty))) { IsSolidGeometry = true },
 		["IntroCar"] = new((map, entity) => new IntroCar(entity.GetFloatProperty("scale", 6)))
 	};
 
@@ -529,7 +531,9 @@ public class Map
 		}
 
 		model.Mesh.SetVertices<Vertex>(CollectionsMarshal.AsSpan(meshVertices));
+		model.Vertices = [.. meshVertices];
 		model.Mesh.SetIndices<int>(CollectionsMarshal.AsSpan(meshIndices));
+		model.Indices = [.. meshIndices];
 
 		Pool.Return(meshVertices);
 		Pool.Return(meshIndices);

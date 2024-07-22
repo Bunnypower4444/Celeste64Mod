@@ -24,6 +24,7 @@ FRAGMENT:
 uniform sampler2D u_texture;
 uniform float u_near;
 uniform float u_far;
+uniform float u_color;
 
 in vec2 v_tex;
 in vec4 v_color;
@@ -33,7 +34,7 @@ out vec4 o_color;
 void main(void)
 {
 	// apply color value
-	o_color = texture(u_texture, v_tex) * v_color;
+	o_color = texture(u_texture, v_tex) * v_color * u_color;
 
 	// apply depth values
 	gl_FragDepth = LinearizeDepth(gl_FragCoord.z, u_near, u_far);

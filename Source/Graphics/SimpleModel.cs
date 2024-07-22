@@ -9,6 +9,8 @@ public class SimpleModel : Model
 	public readonly Mesh Mesh = new();
 	public readonly List<Part> Parts = [];
 	public CullMode CullMode = CullMode.Back;
+	public Vertex[] Vertices = [];
+	public int[] Indices = [];
 
 	public SimpleModel() { }
 
@@ -83,6 +85,8 @@ public class SimpleModel : Model
 
 		Mesh.SetVertices<Vertex>(CollectionsMarshal.AsSpan(vertices));
 		Mesh.SetIndices<int>(CollectionsMarshal.AsSpan(indices));
+		Vertices = [.. vertices];
+		Indices = [.. indices];
 		Transform = Matrix.Identity;
 		Flags = ModelFlags.Terrain;
 	}

@@ -11,4 +11,5 @@ public enum ModelFlags
 	Transparent           = 1 << 3,
 	Cutout		          = 1 << 4,
 	StrawberryGetEffect   = 1 << 5,
+	RoomWall			  = 1 << 6
 }

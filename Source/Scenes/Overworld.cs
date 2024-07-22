@@ -805,6 +805,8 @@ public class Overworld : Scene
 			    material.Set("u_texture", it.Target);
             if (material.Shader?.Has("u_texture_sampler") ?? false)
 			    material.Set("u_texture_sampler", new TextureSampler(TextureFilter.Linear, TextureWrap.ClampToEdge, TextureWrap.ClampToEdge));
+			if (material.Shader?.Has("u_color") ?? false)
+				material.Set("u_color", Color.White);
 
 			var cmd = new DrawCommand(target, mesh, material)
 			{

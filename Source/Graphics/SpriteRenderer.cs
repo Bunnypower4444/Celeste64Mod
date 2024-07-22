@@ -64,6 +64,8 @@ public class SpriteRenderer
 		    spriteMaterial.Set("u_far", state.Camera.FarPlane);
         if (spriteMaterial.Shader?.Has("u_near") ?? false)
 		    spriteMaterial.Set("u_near", state.Camera.NearPlane);
+		if (spriteMaterial.Shader?.Has("u_color") ?? false)
+			spriteMaterial.Set("u_color", Color.White);
 
 		foreach (var batch in spriteBatches)
 		{
