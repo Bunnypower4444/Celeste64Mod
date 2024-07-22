@@ -164,7 +164,7 @@ public class RoomWall(string roomName) : Solid
                         continue;
 
                     // Render the front-facing stuff (if there are any)
-                    /* if (backFacingPartIndexStarts[i] > segment.IndexStart)
+                    if (backFacingPartIndexStarts[i] > segment.IndexStart)
                     {
                         var call = new DrawCommand(state.Camera.Target, SimpleModel.Mesh, SimpleModel.Materials[segment.MaterialIndex])
                         {
@@ -176,7 +176,7 @@ public class RoomWall(string roomName) : Solid
                         };
                         call.Submit();
                         state.Calls++;
-                    } */
+                    }
 
                     // Render the back-facing stuff without DepthMask (if there are any)
                     if (backFacingPartIndexStarts[i] < segment.IndexStart + segment.IndexCount)
