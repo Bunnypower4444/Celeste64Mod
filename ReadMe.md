@@ -1,3 +1,5 @@
+Video of gameplay: https://www.youtube.com/watch?v=NhXQpXGFaoE
+
 # Celeste 64: FitnessGram Pacer Test
 This is the source code for the Celeste 64 FitnessGram Pacer Test, a mod for *Celeste 64: Fragments of the Mountain*. This mod adds the FitnessGram Pacer Test as a fun challenge. This was my first time modding a game, enjoy!
 
