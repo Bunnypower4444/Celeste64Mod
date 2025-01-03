@@ -54,6 +54,8 @@ public class Room(string targetRoomName, bool isSecret = false) : Actor
     }
 }
 
+
+// If this is being weird just have a preset face that is visible
 public class RoomWall(string roomName) : Solid
 {
     // Basically a SimpleModel, but has a custom Prepare method
